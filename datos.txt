@@ -1,0 +1,15 @@
+git clone https://github.com/sisoputnfrba/tp-2015-1c-los-salieris.git
+
+gerardoaquino25
+7Albert1Einstein9
+
+
+start nodo A
+start nodo B
+start nodo C
+
+copy file /home/utnso/Escritorio/Nuevo.txt /prueba
+
+ls file blocks /prueba/Nuevo.txt
+
+get file bloque /prueba/Nuevo.txt 0

@@ -27,7 +27,7 @@ t_list * nodos; //Lista de t_nodos
 t_dictionary * bloques_nodos_archivos;
 t_dictionary * bloques_nodo_disponible;
 unsigned long contador_archivos;
-
+unsigned long contador_nodo;
 
 typedef struct {
 	t_list* directorios;
@@ -71,6 +71,7 @@ t_archivo_datos_self * datos; //Estructura temporal para simular la obtencion de
 typedef struct {
 	int estado;
 	char * nombre;
+	char * nodo_id;
 	int bloques_disponibles;
 	t_dictionary * bloques;
 } t_nodo_self;
@@ -91,6 +92,7 @@ typedef struct {
 } t_bloque_archivo_control_self;
 
 #define CANTIDAD_BLOQUES_NODO_DEFAULT 50
+#define TAMANIO_BLOQUE_NODO 20971520
 
 #define ARCHIVO_NUEVO "/home/utnso/Escritorio/Nuevo.txt"
 #define ARCHIVO_NUEVO2 "/home/utnso/Escritorio/Nuevo2.txt"

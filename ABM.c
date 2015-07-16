@@ -19,14 +19,19 @@ t_archivo_self* find_archivo(char* nombre, t_list* archivosAux) {
 	return NULL;
 }
 
+char* generate_unique_id_to_nodo() {
+	contador_nodo++;
+	return string_itoa(contador_nodo);
+}
+
 char* generate_unique_id_to_directorio() {
 	directorios->contador++;
 	return string_itoa(directorios->contador);
 }
 
 char* generate_unique_id_to_archivo() {
-	directorios->contador++;
-	return string_itoa(directorios->contador);
+	contador_archivos++;
+	return string_itoa(contador_archivos);
 }
 
 /*
@@ -43,18 +48,35 @@ t_archivo_self* find_archivo_by_id(char* archivo_id, t_list* archivosAux) {
 	return NULL;
 }
 
+int no_tiene_copia(t_archivo_self* archivo, int numero_bloque, t_nodo_self* nodo) {
+	int i;
+	t_bloque_archivo_self * bloque = dictionary_get(archivo->bloques, string_itoa(numero_bloque));
+
+	if (bloque != NULL) {
+		for (i = 0; i < list_size(bloque->copias); i++) {
+			t_copia_self * copia = list_get(bloque->copias, i);
+			if (strcasecmp(copia->nodo_bloque->nodo->nodo_id, nodo->nodo_id) == 0)
+				return 0;
+		}
+	} else
+		return 1;
+
+	return 1;
+}
+
 /*
  * Busca un t_nodo_tp que sea el que mas espacio disponible tenga en la lista de nodos.
  * TODO: Falta verificar que una copia del mismo bloque de archivo no este en ese nodo.
  */
-t_nodo_self* find_nodo_disponible(char* nombre, int numero_bloque1) {
+t_nodo_self* find_nodo_disponible(int numero_bloque, t_archivo_self* archivo) {
 	int espacio_disponible = 0;
 	int i;
 	t_nodo_self* selecto = NULL;
 	for (i = 0; i < list_size(nodos); i++) {
 		t_nodo_self * nodo = list_get(nodos, i);
+
 		if (nodo->bloques_disponibles > espacio_disponible
-				&& nodo->estado == 1) {
+				&& nodo->estado == 1 && no_tiene_copia(archivo, numero_bloque, nodo)) {
 			espacio_disponible = nodo->bloques_disponibles;
 			selecto = nodo;
 		}
@@ -69,7 +91,7 @@ t_nodo_self* find_nodo_disponible(char* nombre, int numero_bloque1) {
  */
 int get_bloque_disponible(t_nodo_self* nodo) {
 	t_list* lista = ((t_list*) dictionary_get(bloques_nodo_disponible,
-			nodo->nombre));
+			nodo->nodo_id));
 
 	if (list_size(lista)) {
 		int disponible = list_get(lista, 0);
@@ -99,16 +121,16 @@ t_nodo_self* find_nodo(char* nombre) {
  */
 void add_nodo_to_nodos(t_nodo_self* nodo) {
 	list_add(nodos, nodo);
-	iniciar_disponibles(nodo->nombre);
+	iniciar_disponibles(nodo->nodo_id);
 	t_list* bloque_archivo_control = list_create();
-	dictionary_put(bloques_nodos_archivos, nodo->nombre,
+	dictionary_put(bloques_nodos_archivos, nodo->nodo_id,
 			bloque_archivo_control);
 }
 
 /*
  * Inicializa la lista de control de bloques por nodo.
  */
-void iniciar_disponibles(char* nombre) {
+void iniciar_disponibles(char* nodo_id) {
 	int i;
 	t_list * lista = list_create();
 	for (i = 1; i <= CANTIDAD_BLOQUES_NODO_DEFAULT; i++) {
@@ -118,7 +140,7 @@ void iniciar_disponibles(char* nombre) {
 		list_add(lista, numero);
 	}
 
-	dictionary_put(bloques_nodo_disponible, nombre, lista);
+	dictionary_put(bloques_nodo_disponible, nodo_id, lista);
 }
 
 /*
@@ -177,7 +199,7 @@ void reactivar_nodo(t_nodo_self* nodo) {
 		int i;
 		nodo->estado = 1;
 		t_list* archivos_nodo = dictionary_get(bloques_nodos_archivos,
-				nodo->nombre);
+				nodo->nodo_id);
 
 		for (i = 0; i < list_size(archivos_nodo); i++) {
 			t_bloque_archivo_control_self* bloque_archivo_control = list_get(
@@ -194,12 +216,14 @@ void reactivar_nodo(t_nodo_self* nodo) {
  * Agrega o reactiva un nodo que ingreso al FS.
  */
 void alta_nodo(char* nombre) {
+	//TODO: iniciar conexión con nodo.
 	t_nodo_self* nodoAux = find_nodo(nombre);
 	if (nodoAux == NULL) {
 		t_nodo_self* nodo;
 		nodo = malloc(sizeof(t_nodo_self));
 		nodo->estado = 1;
 		nodo->nombre = nombre;
+		nodo->nodo_id = generate_unique_id_to_nodo();
 		nodo->bloques_disponibles = CANTIDAD_BLOQUES_NODO_DEFAULT;
 		add_nodo_to_nodos(nodo);
 	} else {
@@ -241,6 +265,7 @@ void chequear_baja_archivo(t_archivo_self* archivo, int archivo_bloque) {
  * Desactiva un nodo.
  */
 void baja_nodo(char* nombre) {
+	//TODO: detener conexión con nodo.
 	t_nodo_self* nodo = find_nodo(nombre);
 	if (nodo != NULL) {
 		int i;
@@ -260,7 +285,7 @@ void baja_nodo(char* nombre) {
 	}
 }
 
-char* create_directorio(char* nombre, int nivel, char* padre, char* ruta){
+char* create_directorio(char* nombre, int nivel, char* padre, char* ruta) {
 	t_directorio_self* directorio;
 	directorio = malloc(sizeof(t_directorio_self));
 	directorio->nombre = string_duplicate(nombre);
@@ -280,8 +305,8 @@ char * get_directorio_numero(char* nombre, int nivel, char* padre) {
 		t_directorio_self* directorio = list_get(directorios->directorios, i);
 
 		if (directorio->nivel == nivel) {
-			if (strcasecmp(directorio->padre, padre) == 0){
-				if(strcasecmp(directorio->nombre, nombre) == 0)
+			if (strcasecmp(directorio->padre, padre) == 0) {
+				if (strcasecmp(directorio->nombre, nombre) == 0)
 					return directorio->id;
 			}
 		}
@@ -303,18 +328,21 @@ char* set_directorio(char* ruta, int extension) {
 			string_append(&ruta_aux, "/");
 			string_append(&ruta_aux, directorios_aux[i]);
 			if (encontrado) {
-				char* padre_aux = get_directorio_numero(directorios_aux[i], i, padre);
+				char* padre_aux = get_directorio_numero(directorios_aux[i], i,
+						padre);
 				if (!(strcasecmp(padre_aux, "-1") == 0)) {
 					padre = padre_aux;
 				} else {
 					encontrado = 0;
-					padre = create_directorio(directorios_aux[i], i, padre, ruta_aux);
+					padre = create_directorio(directorios_aux[i], i, padre,
+							ruta_aux);
 				}
 			} else {
-				padre = create_directorio(directorios_aux[i], i, padre, ruta_aux);
+				padre = create_directorio(directorios_aux[i], i, padre,
+						ruta_aux);
 			}
 			i++;
-		}else{
+		} else {
 			break;
 		}
 	}
@@ -366,7 +394,7 @@ t_copia_self* create_copia(int bloque, t_nodo_self* nodo, int archivo_id) {
 	control = malloc(sizeof(t_bloque_archivo_control_self));
 	control->archivo_bloque = 1;
 	control->archivo_id = archivo_id;
-	t_list* lista = dictionary_get(bloques_nodos_archivos, nodo->nombre);
+	t_list* lista = dictionary_get(bloques_nodos_archivos, nodo->nodo_id);
 	list_add(lista, control);
 
 	return copia;
@@ -377,10 +405,11 @@ t_copia_self* create_copia(int bloque, t_nodo_self* nodo, int archivo_id) {
  */
 void asignar_bloque_nodo_a_copia(t_copia_self* copia, t_nodo_self* nodo) {
 	t_nodo_bloque_self *nodo_bloque;
+	nodo_bloque = malloc(sizeof(t_nodo_bloque_self));
 	nodo_bloque->nodo = nodo;
 	nodo_bloque->bloque_nodo = get_bloque_disponible(nodo);
 	copia->nodo_bloque = nodo_bloque;
-	nodo->bloques_disponibles -= 1;
+	nodo->bloques_disponibles--;
 }
 
 /*
@@ -408,11 +437,11 @@ t_archivo_datos_self* dividir_archivo(char* nombre) {
 	long filelen;
 	int i;
 	archivo->bloques = list_create();
-	int max = 20000000;
+	int max = TAMANIO_BLOQUE_NODO;
 	int maxRead = max - sizeof(char);
 
 	file = fopen(nombre, "rb");
-	if (file == NULL){
+	if (file == NULL) {
 		printf("No se encontro el archivo.");
 		exit(1);
 	}
@@ -449,7 +478,7 @@ t_archivo_datos_self* dividir_archivo(char* nombre) {
 	return archivo;
 }
 
-void borrado_fisico_nodo(char* nodo){
+void borrado_fisico_nodo(char* nodo) {
 	//TODO: Solicitud de borrado de informacion de nodo.
 }
 
@@ -458,14 +487,14 @@ void formartear_mdfs() {
 	int i, j;
 	for (i = 0; i < list_size(nodos); i++) {
 		t_nodo_self* nodo = list_get(nodos, i);
-		borrado_fisico_nodo(nodo->nombre);
-		t_list * bna = dictionary_get(bloques_nodos_archivos, nodo->nombre);
-		t_list * bnd = dictionary_get(bloques_nodo_disponible, nodo->nombre);
+		borrado_fisico_nodo(nodo->nodo_id);
+		t_list * bna = dictionary_get(bloques_nodos_archivos, nodo->nodo_id);
+		t_list * bnd = dictionary_get(bloques_nodo_disponible, nodo->nodo_id);
 
 		list_clean(bna);
 		list_clean(bnd);
 
-		iniciar_disponibles(nodo->nombre);
+		iniciar_disponibles(nodo->nodo_id);
 	}
 
 	for (i = 0; i < list_size(archivos); i++) {
@@ -482,18 +511,18 @@ void formartear_mdfs() {
 	list_clean(directorios->directorios);
 }
 
-void mover_archivo(char* nombre, char* destino){
+void mover_archivo(char* nombre, char* destino) {
 	t_archivo_self* archivo = find_archivo(nombre, archivos);
 	archivo->ruta_id = set_directorio(destino, true);
 }
 
-void renombrar_archivo(char * ruta, char* nombre){
+void renombrar_archivo(char * ruta, char* nombre) {
 	t_archivo_self* archivo = find_archivo(ruta, archivos);
 	int i = 0;
 	char** ruta_aux = string_split(archivo->nombre, "/");
 	char* destino = "/";
 
-	while(ruta_aux[i + 1] != NULL){
+	while (ruta_aux[i + 1] != NULL) {
 		string_append(&destino, ruta_aux[i]);
 		string_append(&destino, "/");
 		i++;
@@ -524,17 +553,17 @@ void eliminar_archivo(char * ruta) {
 				t_nodo_self * nodo = bloque_nodo->nodo;
 				//TODO: Si el nodo no esta disponible, no se puede borrar los datos.
 				nodo->bloques_disponibles++;
-				dictionary_put(bloques_nodo_disponible, nodo->nombre,
+				dictionary_put(bloques_nodo_disponible, nodo->nodo_id,
 						bloque_nodo->bloque_nodo);
 
 				t_list* archivos_nodo = dictionary_get(bloques_nodos_archivos,
-						nodo->nombre);
+						nodo->nodo_id);
 
 				for (k = list_size(archivos_nodo) - 1; k >= 0; k--) {
 					t_bloque_archivo_control_self* bloque_archivo_control =
 							list_get(archivos_nodo, i);
-					if (strcasecmp(
-							bloque_archivo_control->archivo_id, archivo->id) == 0)
+					if (strcasecmp(bloque_archivo_control->archivo_id,
+							archivo->id) == 0)
 						list_remove(archivos_nodo, k);
 				}
 
@@ -546,20 +575,21 @@ void eliminar_archivo(char * ruta) {
 	}
 }
 
-void crear_directorio(char* ruta, char* nombre){
+void crear_directorio(char* ruta, char* nombre) {
 	char * destino = string_new();
 	if (ruta != NULL)
 		string_append(&destino, ruta);
 
-	string_append(&destino,"/");
-	string_append(&destino,nombre);
+	string_append(&destino, "/");
+	string_append(&destino, nombre);
 	set_directorio(destino, false);
 }
 
-t_directorio_self* get_directorio_by_id(char* archivo_id){
+t_directorio_self* get_directorio_by_id(char* archivo_id) {
 	int i;
-	for (i = 0; i < list_size(directorios->directorios); i++){
-		t_directorio_self* directorio_aux = list_get(directorios->directorios, i);
+	for (i = 0; i < list_size(directorios->directorios); i++) {
+		t_directorio_self* directorio_aux = list_get(directorios->directorios,
+				i);
 		if (strcasecmp(archivo_id, directorio_aux->id) == 0)
 			return directorio_aux;
 	}
@@ -567,14 +597,14 @@ t_directorio_self* get_directorio_by_id(char* archivo_id){
 	return NULL;
 }
 
-char * get_ruta_directorio(t_directorio_self* directorio){
+char * get_ruta_directorio(t_directorio_self* directorio) {
 	char* padre = directorio->padre;
 	char* ultimo = strdup("0");
 	char* ruta = string_new();
 	string_append(&ruta, "/");
 	string_append(&ruta, directorio->nombre);
 
-	while(strcasecmp(padre, ultimo) != 0){
+	while (strcasecmp(padre, ultimo) != 0) {
 		t_directorio_self* directorio_aux = get_directorio_by_id(padre);
 		char* ruta_aux = strdup("/");
 		string_append(&ruta_aux, directorio_aux->nombre);
@@ -586,7 +616,7 @@ char * get_ruta_directorio(t_directorio_self* directorio){
 	return ruta;
 }
 
-t_directorio_self* get_directorio_by_ruta(char* ruta){
+t_directorio_self* get_directorio_by_ruta(char* ruta) {
 	char** ruta_aux = string_split(ruta, "/");
 	int i = 0;
 	int j;
@@ -595,16 +625,16 @@ t_directorio_self* get_directorio_by_ruta(char* ruta){
 	t_directorio_self * resultado;
 	resultado = malloc(sizeof(t_directorio_self));
 
-	while(ruta_aux[i] != NULL){
+	while (ruta_aux[i] != NULL) {
 		resultado = NULL;
 		for (j = 0; j < list_size(directorios->directorios); j++) {
 			t_directorio_self * directorio = list_get(directorios->directorios,
 					j);
-			if(strcasecmp(directorio->nombre, ruta_aux[i]) == 0){
+			if (strcasecmp(directorio->nombre, ruta_aux[i]) == 0) {
 				if (directorio->nivel == i) {
-					if (strcasecmp(directorio->padre, padre) == 0){
+					if (strcasecmp(directorio->padre, padre) == 0) {
 						padre = directorio->id;
-						resultado = list_get(directorios->directorios,j);
+						resultado = list_get(directorios->directorios, j);
 						break;
 					}
 				}
@@ -616,12 +646,12 @@ t_directorio_self* get_directorio_by_ruta(char* ruta){
 	return resultado;
 }
 
-void renombrar_directorio(char* ruta, char* nombre){
+void renombrar_directorio(char* ruta, char* nombre) {
 	char* ruta_aux = string_new();
 
-	if(strncmp(ruta, "/", 1) == 0){
+	if (strncmp(ruta, "/", 1) == 0) {
 
-	}else{
+	} else {
 		string_append(&ruta_aux, "/");
 	}
 	string_append(&ruta_aux, ruta);
@@ -633,7 +663,7 @@ void renombrar_directorio(char* ruta, char* nombre){
 	int i = 0;
 	char * ruta_final = string_new();
 
-	while(i < directorio->nivel){
+	while (i < directorio->nivel) {
 		string_append(&ruta_final, "/");
 		string_append(&ruta_final, directorios_aux[i]);
 		i++;
@@ -667,34 +697,152 @@ void copiar_archivo_a_mdfs(char* ruta, char* destino_aux) {
 	//
 
 	char * nombre_archivo = get_nombre_archivo(ruta);
-	if(!string_ends_with(destino, "/"))
+	if (!string_ends_with(destino, "/"))
 		string_append(&destino, "/");
 	string_append(&destino, nombre_archivo);
 
 	t_archivo_self* archivo = create_archivo(archivo_datos->tamanio, destino);
+	archivo->cantidad_bloques = list_size(archivo_datos->bloques);
 
 	int i;
 	for (i = 0; i < list_size(archivo_datos->bloques); i++) {
 		t_bloque_archivo_self* bloque = create_bloque(i);
-
-		t_copia_self* copia1 = create_copia(i, find_nodo_disponible(destino, i),
-				archivo->id);
-		t_copia_self* copia2 = create_copia(i, find_nodo_disponible(destino, i),
-				archivo->id);
-		t_copia_self* copia3 = create_copia(i, find_nodo_disponible(destino, i),
-				archivo->id);
-
-		asignar_copia_a_bloque_archivo(bloque, copia1);
-		asignar_copia_a_bloque_archivo(bloque, copia2);
-		asignar_copia_a_bloque_archivo(bloque, copia3);
-
 		asignar_bloque_archivo_a_archivo(archivo, bloque);
+
+		t_copia_self* copia1 = create_copia(i, find_nodo_disponible(i, archivo),
+				archivo->id);
+		asignar_copia_a_bloque_archivo(bloque, copia1);
+
+		t_copia_self* copia2 = create_copia(i, find_nodo_disponible(i, archivo),
+				archivo->id);
+		asignar_copia_a_bloque_archivo(bloque, copia2);
+
+		t_copia_self* copia3 = create_copia(i, find_nodo_disponible(i, archivo),
+				archivo->id);
+		asignar_copia_a_bloque_archivo(bloque, copia3);
 	}
 	archivo->estado = VALIDO;
 
 	add_archivo_to_archivos(archivo);
 
 //	list_destroy(archivo_datos);
+}
+
+void listar_nodos() {
+	int i;
+
+	for (i = 0; i < nodos->elements_count; i++) {
+		t_nodo_self * nodo = list_get(nodos, i);
+		txt_write_in_stdout("Nodo: ");
+		txt_write_in_stdout(nodo->nombre);
+		txt_write_in_stdout(" - Id: ");
+		txt_write_in_stdout(string_itoa(nodo->nodo_id));
+		txt_write_in_stdout(" - Bloque: ");
+		txt_write_in_stdout(string_itoa(nodo->bloques_disponibles));
+		txt_write_in_stdout(" - Estado: ");
+		txt_write_in_stdout(string_itoa(nodo->estado));
+		txt_write_in_stdout(".\n");
+	}
+}
+
+void listar_bloques_archivo(char* nombre) {
+	int j, k;
+
+	t_archivo_self* archivo = find_archivo(nombre, archivos);
+
+	if (archivo != NULL) {
+		txt_write_in_stdout(get_nombre_archivo(archivo->nombre));
+		txt_write_in_stdout("\n");
+		txt_write_in_stdout("Cantidad de bloques: ");
+		txt_write_in_stdout(string_itoa(archivo->cantidad_bloques));
+		txt_write_in_stdout("\n");
+
+		for (j = 0; j < archivo->cantidad_bloques; j++) {
+			t_bloque_archivo_self * bloque = dictionary_get(archivo->bloques,
+					string_itoa(j));
+			txt_write_in_stdout("Bloque: ");
+			txt_write_in_stdout(string_itoa(bloque->numero));
+			txt_write_in_stdout(" - Estado: ");
+			txt_write_in_stdout(string_itoa(bloque->estado));
+			txt_write_in_stdout("\n");
+			txt_write_in_stdout("Cantidad de copias: ");
+			txt_write_in_stdout(string_itoa(bloque->copias->elements_count));
+			txt_write_in_stdout("\n");
+
+			for (k = 0; k < bloque->copias->elements_count; k++) {
+				t_copia_self * copia = list_get(bloque->copias, k);
+				txt_write_in_stdout("Copia: ");
+				txt_write_in_stdout(string_itoa(k));
+				txt_write_in_stdout(" - Nodo: ");
+				txt_write_in_stdout(copia->nodo_bloque->nodo->nombre);
+				txt_write_in_stdout(" - Bloque: ");
+				txt_write_in_stdout(string_itoa(copia->nodo_bloque->bloque_nodo));
+				txt_write_in_stdout(".\n");
+			}
+		}
+	} else {
+		txt_write_in_stdout("Archivo no encontrado.\n");
+	}
+}
+
+void listar_todo() {
+	int i, j, k;
+	int cola = list_size(directorios->directorios);
+	int encontrado = false;
+
+	for (j = 0; j < cola; j++) {
+		for (i = 0; i < list_size(directorios->directorios); i++) {
+			t_directorio_self * directorio = list_get(directorios->directorios,
+					i);
+			if (directorio->nivel == j) {
+				txt_write_in_stdout(string_itoa(directorio->nivel));
+				txt_write_in_stdout(": ");
+				txt_write_in_stdout(directorio->id);
+				txt_write_in_stdout(" ");
+				txt_write_in_stdout(directorio->padre);
+				txt_write_in_stdout(" ");
+				txt_write_in_stdout(directorio->nombre);
+				txt_write_in_stdout(": ");
+				txt_write_in_stdout(get_ruta_directorio(directorio));
+				txt_write_in_stdout(".\n");
+				encontrado = true;
+
+				for (k = 0; k < archivos->elements_count; k++) {
+					t_archivo_self * archivo = list_get(archivos, k);
+					if (strcasecmp(archivo->ruta_id, directorio->id) == 0) {
+						txt_write_in_stdout(
+								get_nombre_archivo(archivo->nombre));
+						txt_write_in_stdout(": ");
+						txt_write_in_stdout(archivo->nombre);
+						txt_write_in_stdout(" ");
+						txt_write_in_stdout(string_itoa(archivo->tamanio));
+						txt_write_in_stdout(" ");
+						txt_write_in_stdout(string_itoa(archivo->estado));
+						txt_write_in_stdout(".\n");
+					}
+				}
+			}
+		}
+		if (encontrado)
+			encontrado = false;
+		else
+			break;
+	}
+}
+
+void listar_archivos() {
+	int i;
+	for (i = 0; i < archivos->elements_count; i++) {
+		t_archivo_self * archivo = list_get(archivos, i);
+		txt_write_in_stdout(get_nombre_archivo(archivo->nombre));
+		txt_write_in_stdout(": ");
+		txt_write_in_stdout(archivo->nombre);
+		txt_write_in_stdout(" ");
+		txt_write_in_stdout(string_itoa(archivo->tamanio));
+		txt_write_in_stdout(" ");
+		txt_write_in_stdout(string_itoa(archivo->estado));
+		txt_write_in_stdout(".\n");
+	}
 }
 
 void listar_directorios() {
@@ -728,7 +876,7 @@ void listar_directorios() {
 	}
 }
 
-void eliminar_directorio(char* ruta){
+void eliminar_directorio(char* ruta) {
 	//TODO: Eliminar archivos contenidos en los directorios.
 	t_directorio_self* directorio = get_directorio_by_ruta(ruta);
 	t_list* directorios_a_eliminar = list_create();
@@ -753,11 +901,13 @@ void eliminar_directorio(char* ruta){
 	list_add(directorios_a_eliminar, directorio);
 
 	for (i = 0; i < list_size(directorios_a_eliminar); i++) {
-		t_directorio_self* directorio_a_eliminar = list_get(directorios_a_eliminar, i);
+		t_directorio_self* directorio_a_eliminar = list_get(
+				directorios_a_eliminar, i);
 		for (j = 0; j < list_size(directorios->directorios); j++) {
 			t_directorio_self* directorio_aux = list_get(
 					directorios->directorios, j);
-			if (strcasecmp(directorio_aux->id, directorio_a_eliminar->id) == 0) {
+			if (strcasecmp(directorio_aux->id, directorio_a_eliminar->id)
+					== 0) {
 				list_remove(directorios->directorios, j);
 				break;
 			}
@@ -785,7 +935,7 @@ int get_cantidad_niveles(char* ruta) {
 	return contador;
 }
 
-int es_subdirectorio_by_ruta(char* ruta, char* destino){
+int es_subdirectorio_by_ruta(char* ruta, char* destino) {
 	t_directorio_self* directorio_origen = get_directorio_by_ruta(ruta);
 	t_directorio_self* directorio_destino;
 
@@ -799,29 +949,31 @@ int es_subdirectorio_by_ruta(char* ruta, char* destino){
 	return es_subdirectorio_by_directorio(directorio_origen, directorio_destino);
 }
 
-int es_subdirectorio_by_directorio(t_directorio_self* ruta, t_directorio_self* destino){
-	if(ruta == NULL || destino == NULL)
+int es_subdirectorio_by_directorio(t_directorio_self* ruta,
+		t_directorio_self* destino) {
+	if (ruta == NULL || destino == NULL)
 		return 0;
 
-	if(strcasecmp(ruta->id, destino->id) == 0)
+	if (strcasecmp(ruta->id, destino->id) == 0)
 		return 1;
 
-	if(strcasecmp(ruta->padre, "0") == 0 && strcasecmp(destino->padre, "0") == 0)
+	if (strcasecmp(ruta->padre, "0") == 0
+			&& strcasecmp(destino->padre, "0") == 0)
 		return 0;
 
-	if(strcasecmp(destino->padre, "0") == 0)
+	if (strcasecmp(destino->padre, "0") == 0)
 		return 0;
 
-	if(ruta->nivel == destino->nivel)
+	if (ruta->nivel == destino->nivel)
 		return 0;
 
-	if(ruta->nivel > destino->nivel)
+	if (ruta->nivel > destino->nivel)
 		return 0;
 
 	t_directorio_self* directorio = get_directorio_by_id(destino->padre);
 
-	while(strcasecmp(directorio->padre, "0") != 0){
-		if(strcasecmp(ruta->id, directorio->padre) == 0)
+	while (strcasecmp(directorio->padre, "0") != 0) {
+		if (strcasecmp(ruta->id, directorio->padre) == 0)
 			return 1;
 		directorio = get_directorio_by_id(directorio->padre);
 	}
@@ -829,7 +981,7 @@ int es_subdirectorio_by_directorio(t_directorio_self* ruta, t_directorio_self* d
 	return 0;
 }
 
-void mover_directorio(char* ruta, char* destino){
+void mover_directorio(char* ruta, char* destino) {
 	//TODO: Mover archivos contenidos en directorios.
 	t_directorio_self* directorio_origen = get_directorio_by_ruta(ruta);
 	t_directorio_self* directorio_destino = NULL;
@@ -900,13 +1052,12 @@ int reconstruir_archivo(t_list* bloques, char * ruta, char* nombre) {
 	string_append(&ruta_aux, nombre);
 
 	FILE *f = fopen(ruta_aux, "w");
-	if (f == NULL)
-	{
-	    printf("Error opening file!\n");
-	    exit(1);
+	if (f == NULL) {
+		printf("Error opening file!\n");
+		exit(1);
 	}
 
-	for(i = 0; i < list_size(bloques); i++){
+	for (i = 0; i < list_size(bloques); i++) {
 		fprintf(f, list_get(bloques, i));
 	}
 
@@ -917,6 +1068,7 @@ int reconstruir_archivo(t_list* bloques, char * ruta, char* nombre) {
 
 char* get_data_from_nodo(char* nombre, int * bloque, int campo_temporal) {
 	//TODO: Solicitar bloque a nodo.
+	//TEMPORAL: Se va a agregar lo solicitado al nodo.
 	return list_get(datos->bloques, campo_temporal);
 }
 
@@ -938,7 +1090,9 @@ int copiar_archivo_a_local(char* nombre, char* ruta) {
 				t_nodo_bloque_self* bloque_nodo = copia->nodo_bloque;
 				t_nodo_self * nodo = bloque_nodo->nodo;
 				if (nodo->estado == VALIDO) {
-					list_add(bloques_archivo, get_data_from_nodo(nodo->nombre, bloque_nodo->bloque_nodo, i)); //TEMPORAL: Se va a agregar lo solicitado al nodo.
+					list_add(bloques_archivo,
+							get_data_from_nodo(nodo->nodo_id,
+									bloque_nodo->bloque_nodo, i));
 					encontrado = true;
 					break;
 				}
@@ -952,7 +1106,8 @@ int copiar_archivo_a_local(char* nombre, char* ruta) {
 	}
 
 	if (completo) {
-		reconstruir_archivo(bloques_archivo, ruta, get_nombre_archivo(archivo->nombre));
+		reconstruir_archivo(bloques_archivo, ruta,
+				get_nombre_archivo(archivo->nombre));
 		list_destroy(bloques_archivo);
 		return 1;
 	} else {
@@ -965,14 +1120,42 @@ void get_MD5(char* nombre) {
 
 }
 
-void mover_bloque(){
+void ver_bloque(char* nombre, char* bloque_id) {
+	int i;
+	t_archivo_self * archivo = find_archivo(nombre, archivos);
+	t_bloque_archivo_self * bloque = dictionary_get(archivo->bloques,
+			bloque_id);
 
+	for (i = bloque->copias->elements_count - 1; i >= 0; i--) {
+		t_copia_self * copia = list_get(bloque->copias, i);
+
+		if(copia->nodo_bloque->nodo->estado == VALIDO){
+			char * data = string_new();
+//			string_append(&data, get_data_from_nodo(nombre, bloque, bloque_id));
+			txt_write_in_stdout("CONTENIDO:\n");
+			txt_write_in_stdout(get_data_from_nodo(nombre, bloque, atoi(bloque_id)));
+			break;
+		}
+	}
 }
 
-void borrar_bloque(){
+void borrar_bloque(char* nombre, int bloque_id) {
+	int i;
+	//TODO: borrado fisico de bloque del nodo.
+	t_archivo_self * archivo = find_archivo(nombre, archivos);
+	t_bloque_archivo_self * bloque = dictionary_get(archivo->bloques,
+			string_itoa(bloque_id));
 
+	for (i = bloque->copias->elements_count - 1; i >= 0; i--) {
+		t_copia_self * copia = list_get(bloque->copias, i);
+		t_nodo_bloque_self * nodo_bloque = copia->nodo_bloque;
+		free(nodo_bloque);
+	}
+
+	list_destroy(bloque->copias);
+	dictionary_remove(archivo->bloques, string_itoa(bloque_id));
 }
 
-void copiar_bloque(){
+void copiar_bloque() {
 
 }

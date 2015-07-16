@@ -22,22 +22,22 @@ endif
 # Add inputs and outputs from these tool invocations to the build variables 
 
 # All Target
-all: fs_mock
+all: mock_fs
 
 dependents:
 	-cd /home/utnso/workspace/commons/Debug && $(MAKE) all
 
 # Tool invocations
-fs_mock: $(OBJS) $(USER_OBJS) /home/utnso/workspace/commons/Debug/libcommons.so
+mock_fs: $(OBJS) $(USER_OBJS) /home/utnso/workspace/commons/Debug/libcommons.so
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C Linker'
-	gcc -L"/home/utnso/workspace/commons/Debug" -o "fs_mock" $(OBJS) $(USER_OBJS) $(LIBS)
+	gcc -L"/home/utnso/workspace/commons/Debug" -o "mock_fs" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 
 # Other Targets
 clean:
-	-$(RM) $(OBJS)$(C_DEPS)$(EXECUTABLES) fs_mock
+	-$(RM) $(OBJS)$(C_DEPS)$(EXECUTABLES) mock_fs
 	-@echo ' '
 
 .PHONY: all clean dependents
