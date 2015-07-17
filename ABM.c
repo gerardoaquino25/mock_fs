@@ -5,9 +5,6 @@
 #define VALIDO 1
 #define INVALIDO 0
 
-/*
- * Busca un t_archivo en una lista de archivos.
- */
 t_archivo_self* find_archivo(char* nombre, t_list* archivosAux) {
 	int i;
 	for (i = 0; i < list_size(archivosAux); i += 1) {
@@ -34,9 +31,6 @@ char* generate_unique_id_to_archivo() {
 	return string_itoa(contador_archivos);
 }
 
-/*
- * Busca un t_archivo en una lista de archivos.
- */
 t_archivo_self* find_archivo_by_id(char* archivo_id, t_list* archivosAux) {
 	int i;
 	for (i = 0; i < list_size(archivosAux); i += 1) {
@@ -64,10 +58,6 @@ int no_tiene_copia(t_archivo_self* archivo, int numero_bloque, t_nodo_self* nodo
 	return 1;
 }
 
-/*
- * Busca un t_nodo_tp que sea el que mas espacio disponible tenga en la lista de nodos.
- * TODO: Falta verificar que una copia del mismo bloque de archivo no este en ese nodo.
- */
 t_nodo_self* find_nodo_disponible(int numero_bloque, t_archivo_self* archivo) {
 	int espacio_disponible = 0;
 	int i;
@@ -85,10 +75,6 @@ t_nodo_self* find_nodo_disponible(int numero_bloque, t_archivo_self* archivo) {
 	return selecto;
 }
 
-/*
- * Devuelve que bloque de nodo esta disponible y lo quita de la lista
- * de nodos disponibles.
- */
 int get_bloque_disponible(t_nodo_self* nodo) {
 	t_list* lista = ((t_list*) dictionary_get(bloques_nodo_disponible,
 			nodo->nodo_id));
@@ -102,9 +88,6 @@ int get_bloque_disponible(t_nodo_self* nodo) {
 	return -1;
 }
 
-/*
- * Busca un t_nodo_tp en la lista de nodos.
- */
 t_nodo_self* find_nodo(char* nombre) {
 	int i;
 	for (i = 0; i < list_size(nodos); i += 1) {
@@ -116,9 +99,6 @@ t_nodo_self* find_nodo(char* nombre) {
 	return NULL;
 }
 
-/*
- *Agrega un t_nodo_tp nuevo a la lista de nodos.
- */
 void add_nodo_to_nodos(t_nodo_self* nodo) {
 	list_add(nodos, nodo);
 	iniciar_disponibles(nodo->nodo_id);
@@ -127,9 +107,6 @@ void add_nodo_to_nodos(t_nodo_self* nodo) {
 			bloque_archivo_control);
 }
 
-/*
- * Inicializa la lista de control de bloques por nodo.
- */
 void iniciar_disponibles(char* nodo_id) {
 	int i;
 	t_list * lista = list_create();
@@ -143,28 +120,10 @@ void iniciar_disponibles(char* nodo_id) {
 	dictionary_put(bloques_nodo_disponible, nodo_id, lista);
 }
 
-/*
- * Setea como NO disponible a un archivo.
- */
 t_archivo_self* archivo_no_disponible(t_archivo_self* archivo) {
 	return archivo->estado == INVALIDO;
 }
 
-//t_list* ArchivosNoDisponibles(t_list* archivosAux) {
-//	t_list* noDisponibles = list_create();
-//	int i;
-//	for (i = 0; i < list_size(archivosAux); i++) {
-//		if (ArchivoNoDisponible(list_get(archivosAux, i))) {
-//			list_add(noDisponibles);
-//		}
-//	}
-//	return noDisponibles;
-//}
-
-/*
- * Valida si un archivo que estaba inactivado, pasa a estar activo
- * gracias a la validacion de una copia de un bloque dado.
- */
 void chequear_alta_archivo(t_archivo_self* archivo, int numero_bloque) {
 	if (archivo->estado == INVALIDO) {
 		t_bloque_archivo_self* bloque = dictionary_get(archivo->bloques,
@@ -190,10 +149,6 @@ void chequear_alta_archivo(t_archivo_self* archivo, int numero_bloque) {
 	}
 }
 
-/*
- * Activa el nodo y busca los archivos utilizados por el nodo reactivado y
- * si estan invalidos verifica si deben ser dados de alta.
- */
 void reactivar_nodo(t_nodo_self* nodo) {
 	if (nodo != NULL) {
 		int i;
@@ -212,9 +167,6 @@ void reactivar_nodo(t_nodo_self* nodo) {
 	}
 }
 
-/*
- * Agrega o reactiva un nodo que ingreso al FS.
- */
 void alta_nodo(char* nombre) {
 	//TODO: iniciar conexión con nodo.
 	t_nodo_self* nodoAux = find_nodo(nombre);
@@ -231,10 +183,6 @@ void alta_nodo(char* nombre) {
 	}
 }
 
-/*
- * Dado un archivo y un bloque determinados, verifica si el bloque es invalido
- * y lo setea. En el caso de que lo sea, invalida tambien al archivo.
- */
 void chequear_baja_archivo(t_archivo_self* archivo, int archivo_bloque) {
 	t_bloque_archivo_self* bloque = dictionary_get(archivo->bloques,
 			string_itoa(archivo_bloque));
@@ -261,9 +209,6 @@ void chequear_baja_archivo(t_archivo_self* archivo, int archivo_bloque) {
 	}
 }
 
-/*
- * Desactiva un nodo.
- */
 void baja_nodo(char* nombre) {
 	//TODO: detener conexión con nodo.
 	t_nodo_self* nodo = find_nodo(nombre);
@@ -350,9 +295,6 @@ char* set_directorio(char* ruta, int extension) {
 	return padre;
 }
 
-/*
- * Crea un archivo nuevo.
- */
 t_archivo_self* create_archivo(int tamanio, char* nombre) {
 	t_archivo_self* archivo;
 	archivo = malloc(sizeof(t_archivo_self));
@@ -367,9 +309,6 @@ t_archivo_self* create_archivo(int tamanio, char* nombre) {
 	return archivo;
 }
 
-/*
- * Crea un bloque nuevo.
- */
 t_bloque_archivo_self* create_bloque(int numero) {
 	t_bloque_archivo_self* bloque;
 	bloque = malloc(sizeof(t_bloque_archivo_self));
@@ -380,9 +319,6 @@ t_bloque_archivo_self* create_bloque(int numero) {
 	return bloque;
 }
 
-/*
- * Crea una copia de un bloque determinado de un archivo y lo asigna a un bloque de un nodo.
- */
 t_copia_self* create_copia(int bloque, t_nodo_self* nodo, int archivo_id) {
 	t_copia_self* copia;
 	copia = malloc(sizeof(t_copia_self));
@@ -400,9 +336,6 @@ t_copia_self* create_copia(int bloque, t_nodo_self* nodo, int archivo_id) {
 	return copia;
 }
 
-/*
- * Asigna un bloque de t_nodo_tp a una t_copia.
- */
 void asignar_bloque_nodo_a_copia(t_copia_self* copia, t_nodo_self* nodo) {
 	t_nodo_bloque_self *nodo_bloque;
 	nodo_bloque = malloc(sizeof(t_nodo_bloque_self));
@@ -412,9 +345,6 @@ void asignar_bloque_nodo_a_copia(t_copia_self* copia, t_nodo_self* nodo) {
 	nodo->bloques_disponibles--;
 }
 
-/*
- * Asigna una t_copia a las copias de un t_bloque_archivo.
- */
 void asignar_copia_a_bloque_archivo(t_bloque_archivo_self* bloque,
 		t_copia_self* copia) {
 	list_add(bloque->copias, copia);
@@ -760,24 +690,28 @@ void listar_bloques_archivo(char* nombre) {
 		for (j = 0; j < archivo->cantidad_bloques; j++) {
 			t_bloque_archivo_self * bloque = dictionary_get(archivo->bloques,
 					string_itoa(j));
-			txt_write_in_stdout("Bloque: ");
-			txt_write_in_stdout(string_itoa(bloque->numero));
-			txt_write_in_stdout(" - Estado: ");
-			txt_write_in_stdout(string_itoa(bloque->estado));
-			txt_write_in_stdout("\n");
-			txt_write_in_stdout("Cantidad de copias: ");
-			txt_write_in_stdout(string_itoa(bloque->copias->elements_count));
-			txt_write_in_stdout("\n");
+			if (bloque != NULL) {
+				txt_write_in_stdout("Bloque: ");
+				txt_write_in_stdout(string_itoa(bloque->numero));
+				txt_write_in_stdout(" - Estado: ");
+				txt_write_in_stdout(string_itoa(bloque->estado));
+				txt_write_in_stdout("\n");
+				txt_write_in_stdout("Cantidad de copias: ");
+				txt_write_in_stdout(
+						string_itoa(bloque->copias->elements_count));
+				txt_write_in_stdout("\n");
 
-			for (k = 0; k < bloque->copias->elements_count; k++) {
-				t_copia_self * copia = list_get(bloque->copias, k);
-				txt_write_in_stdout("Copia: ");
-				txt_write_in_stdout(string_itoa(k));
-				txt_write_in_stdout(" - Nodo: ");
-				txt_write_in_stdout(copia->nodo_bloque->nodo->nombre);
-				txt_write_in_stdout(" - Bloque: ");
-				txt_write_in_stdout(string_itoa(copia->nodo_bloque->bloque_nodo));
-				txt_write_in_stdout(".\n");
+				for (k = 0; k < bloque->copias->elements_count; k++) {
+					t_copia_self * copia = list_get(bloque->copias, k);
+					txt_write_in_stdout("Copia: ");
+					txt_write_in_stdout(string_itoa(k));
+					txt_write_in_stdout(" - Nodo: ");
+					txt_write_in_stdout(copia->nodo_bloque->nodo->nombre);
+					txt_write_in_stdout(" - Bloque: ");
+					txt_write_in_stdout(
+							string_itoa(copia->nodo_bloque->bloque_nodo));
+					txt_write_in_stdout(".\n");
+				}
 			}
 		}
 	} else {
@@ -1120,11 +1054,10 @@ void get_MD5(char* nombre) {
 
 }
 
-void ver_bloque(char* nombre, char* bloque_id) {
+void ver_bloque(char* nombre, int bloque_id) {
 	int i;
 	t_archivo_self * archivo = find_archivo(nombre, archivos);
-	t_bloque_archivo_self * bloque = dictionary_get(archivo->bloques,
-			bloque_id);
+	t_bloque_archivo_self * bloque = dictionary_get(archivo->bloques,string_itoa(bloque_id));
 
 	for (i = bloque->copias->elements_count - 1; i >= 0; i--) {
 		t_copia_self * copia = list_get(bloque->copias, i);
@@ -1133,29 +1066,35 @@ void ver_bloque(char* nombre, char* bloque_id) {
 			char * data = string_new();
 //			string_append(&data, get_data_from_nodo(nombre, bloque, bloque_id));
 			txt_write_in_stdout("CONTENIDO:\n");
-			txt_write_in_stdout(get_data_from_nodo(nombre, bloque, atoi(bloque_id)));
+			txt_write_in_stdout(get_data_from_nodo(nombre, bloque, bloque_id));
 			break;
 		}
 	}
 }
 
+void borrado_fisico_bloque(){
+
+}
+
 void borrar_bloque(char* nombre, int bloque_id) {
 	int i;
 	//TODO: borrado fisico de bloque del nodo.
+	borrado_fisico_bloque();
 	t_archivo_self * archivo = find_archivo(nombre, archivos);
-	t_bloque_archivo_self * bloque = dictionary_get(archivo->bloques,
-			string_itoa(bloque_id));
+	t_bloque_archivo_self * bloque = dictionary_get(archivo->bloques,string_itoa(bloque_id));
 
 	for (i = bloque->copias->elements_count - 1; i >= 0; i--) {
 		t_copia_self * copia = list_get(bloque->copias, i);
 		t_nodo_bloque_self * nodo_bloque = copia->nodo_bloque;
+		nodo_bloque->nodo->bloques_disponibles++;
 		free(nodo_bloque);
 	}
+	archivo->estado = INVALIDO;
 
 	list_destroy(bloque->copias);
 	dictionary_remove(archivo->bloques, string_itoa(bloque_id));
 }
 
-void copiar_bloque() {
+void copiar_bloque(char* ruta, int bloque_id) {
 
 }

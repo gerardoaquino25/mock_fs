@@ -1,15 +1,43 @@
 git clone https://github.com/sisoputnfrba/tp-2015-1c-los-salieris.git
 
-gerardoaquino25
-7Albert1Einstein9
 
 
 start nodo A
 start nodo B
 start nodo C
 
-copy file /home/utnso/Escritorio/Nuevo.txt /prueba
+copy file /home/utnso/Escritorio/Nuevo2.txt /prueba
 
-ls file blocks /prueba/Nuevo.txt
+ls bloques /prueba/Nuevo2.txt
 
-get file bloque /prueba/Nuevo.txt 0
+get bloque /prueba/Nuevo2.txt 0
+
+delete bloque /prueba/Nuevo2.txt 0
+
+
+COMANDOS
+	-DIRECTORIOS:
+		cd ..
+		cd nombre
+		cd /carpeta/nombre2
+		create dir carpeta
+		create dir carpeta /carpeta1
+		rename dir
+		ls
+		ls dirs
+		ls files
+		ls bloques /carpeta/nombre.txt
+		ls nodos
+		
+		
+	-ARCHIVOS:
+		copy file /carpeta/nombre.txt
+		export file /carpeta/nombre.txt
+		get bloque
+		delete bloque
+
+	-NODOS:
+		start nodo nombre
+		delete nodo nombre
+
+	-OTROS:
