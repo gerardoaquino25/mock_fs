@@ -1,10 +1,5 @@
 #include "ABM.h"
 
-#define filename "/home/utnso/Escritorio/Nuevo2.txt"
-
-#define VALIDO 1
-#define INVALIDO 0
-
 t_archivo_self* find_archivo(char* nombre, t_list* archivosAux) {
 	int i;
 	for (i = 0; i < list_size(archivosAux); i += 1) {

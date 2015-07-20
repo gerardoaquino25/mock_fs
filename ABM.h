@@ -27,6 +27,8 @@
 #define TAMANIO_BLOQUE_NODO 20971520
 #define ARCHIVO_NUEVO "/home/utnso/Escritorio/Nuevo.txt"
 #define ARCHIVO_NUEVO2 "/home/utnso/Escritorio/Nuevo2.txt"
+#define VALIDO 1
+#define INVALIDO 0
 
 typedef struct {
 	t_list* directorios;
