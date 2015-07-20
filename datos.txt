@@ -51,7 +51,9 @@ COMANDOS
 
 	-OTROS:
 
-- Chequear tamano maximos de directorios - 1024.
-- Enviar a nodo cada 20MB.
+PROBAR:
 - Al copiar un bloque, validar que lo que se copia no sea una copia de un mismo bloque de archivo que ya se encuentra en el mismo nodo.
+- Enviar a nodo cada 20MB.
+
+FALTANTE:
 - Validar disponibilidad(Concurrencia) de archivo.

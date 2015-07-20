@@ -263,6 +263,7 @@ char* create_directorio(char* nombre, int nivel, char* padre, char* ruta) {
 	directorio->ruta = string_duplicate(ruta);
 	directorio->id = generate_unique_id_to_directorio();
 	list_add(directorios->directorios, directorio);
+	directorios->contador_directorios++;
 
 	return directorio->id;
 }
@@ -291,24 +292,39 @@ char* set_directorio(char* ruta, int extension) {
 	char** directorios_aux = string_split(ruta, "/");
 	int sum = extension ? 1 : 0;
 	char* ruta_aux = string_new();
+	int total_directorios = 0;
 
+	while (directorios_aux[i] != NULL) {
+			total_directorios++;
+			i++;
+	}
+
+	i = 0;
 	while (1) {
 		if (directorios_aux[i + sum] != NULL) {
 			string_append(&ruta_aux, "/");
 			string_append(&ruta_aux, directorios_aux[i]);
 			if (encontrado) {
-				char* padre_aux = get_directorio_numero(directorios_aux[i], i,
-						padre);
+				char* padre_aux = get_directorio_numero(directorios_aux[i], i, padre);
 				if (!(strcasecmp(padre_aux, "-1") == 0)) {
 					padre = padre_aux;
+					total_directorios--;
 				} else {
 					encontrado = 0;
-					padre = create_directorio(directorios_aux[i], i, padre,
-							ruta_aux);
+					if (TAMANIO_MAXIMO_DIRECTORIOS >= directorios->contador_directorios + total_directorios)
+						padre = create_directorio(directorios_aux[i], i, padre, ruta_aux);
+					else {
+						txt_write_in_stdout("No hay directorios disponibles.\n");
+						break;
+					}
 				}
 			} else {
-				padre = create_directorio(directorios_aux[i], i, padre,
-						ruta_aux);
+				if (i > 0 || TAMANIO_MAXIMO_DIRECTORIOS >= directorios->contador_directorios + total_directorios)
+					padre = create_directorio(directorios_aux[i], i, padre, ruta_aux);
+				else {
+					txt_write_in_stdout("No hay directorios disponibles.\n");
+					break;
+				}
 			}
 			i++;
 		} else {
@@ -965,6 +981,7 @@ void eliminar_directorio(char* ruta) {
 			if (strcasecmp(directorio_aux->id, directorio_a_eliminar->id)
 					== 0) {
 				list_remove(directorios->directorios, j);
+				directorios->contador_directorios--;
 				break;
 			}
 		}
@@ -1368,6 +1385,17 @@ void borrar_bloque(char* nombre, int bloque_nodo_id) {
 //	}
 //}
 
+int existe_copia_en_nodo(t_bloque_archivo_self* bloque, t_nodo_self* nodo) {
+	int i;
+	for (i = 0; i < bloque->copias->elements_count; i++) {
+		t_copia_self* copia = list_get(bloque->copias, i);
+		if (strcasecmp(copia->nodo_bloque->nodo->nodo_id, nodo->nodo_id) == 0)
+			return false;
+	}
+
+	return true;
+}
+
 void copiar_bloque(char* nombre_nodo_origen, int bloque_origen, char* nombre_nodo_destino, int bloque_destino) {
 	//TODO: Copiar fisicamente al nodo indicado.
 
@@ -1384,55 +1412,65 @@ void copiar_bloque(char* nombre_nodo_origen, int bloque_origen, char* nombre_nod
 
 					if (nodo_destino != NULL) {
 
-						if (nodo_destino->estado == VALIDO) {
-							int ocupado = false;
-							t_archivo_self* archivo_origen = find_archivo_by_id(copia_origen->archivo_id, archivos);
-							t_bloque_archivo_self* bloque_archivo = dictionary_get(archivo_origen->bloques,
-									string_itoa(copia_origen->archivo_bloque));
-							t_copia_self * copia_destino = dictionary_get(nodo_destino->bloques, string_itoa(bloque_destino));
+						if (strcasecmp(nodo_destino->nodo_id, nodo_origen->nodo_id) == 0) {
 
-							if (copia_destino != NULL) {
-								int i;
-								t_archivo_self* archivo_destino = find_archivo_by_id(copia_destino->archivo_id, archivos);
-								t_bloque_archivo_self * bloque_archivo_destino = dictionary_get(archivo_destino->bloques,
-										string_itoa(copia_destino->archivo_bloque));
-								int archivo_bloque_destino = copia_destino->archivo_bloque;
-								int numero_copia_destino = copia_destino->numero;
+							if (nodo_destino->estado == VALIDO) {
+								int ocupado = false;
+								t_archivo_self* archivo_origen = find_archivo_by_id(copia_origen->archivo_id, archivos);
+								t_bloque_archivo_self* bloque_archivo = dictionary_get(archivo_origen->bloques,
+										string_itoa(copia_origen->archivo_bloque));
+								t_copia_self * copia_destino = dictionary_get(nodo_destino->bloques, string_itoa(bloque_destino));
 
-								dictionary_put(bloques_nodo_disponible, nodo_destino->nodo_id,
-										copia_destino->nodo_bloque->bloque_nodo);
-								dictionary_remove(nodo_destino->bloques, string_itoa(bloque_destino));
+								if (copia_destino != NULL) {
 
-								for (i = 0; i < bloque_archivo_destino->copias->elements_count; i++) {
-									t_copia_self * copia_aux = list_get(bloque_archivo_destino->copias, i);
-									if (copia_aux->numero == numero_copia_destino) {
-										list_remove(bloque_archivo_destino->copias, i);
-										break;
+									if (existe_copia_en_nodo(bloque_archivo, nodo_destino)) {
+										int i;
+										t_archivo_self* archivo_destino = find_archivo_by_id(copia_destino->archivo_id, archivos);
+										t_bloque_archivo_self * bloque_archivo_destino = dictionary_get(archivo_destino->bloques,
+												string_itoa(copia_destino->archivo_bloque));
+										int archivo_bloque_destino = copia_destino->archivo_bloque;
+										int numero_copia_destino = copia_destino->numero;
+
+										dictionary_put(bloques_nodo_disponible, nodo_destino->nodo_id,
+												copia_destino->nodo_bloque->bloque_nodo);
+										dictionary_remove(nodo_destino->bloques, string_itoa(bloque_destino));
+
+										for (i = 0; i < bloque_archivo_destino->copias->elements_count; i++) {
+											t_copia_self * copia_aux = list_get(bloque_archivo_destino->copias, i);
+											if (copia_aux->numero == numero_copia_destino) {
+												list_remove(bloque_archivo_destino->copias, i);
+												break;
+											}
+										}
+
+										t_list* archivos_nodo = dictionary_get(bloques_nodos_archivos, nodo_destino->nodo_id);
+
+										for (i = 0; i < archivos_nodo->elements_count; i++) {
+											t_bloque_archivo_control_self* bloque_archivo_control = list_get(archivos_nodo, i);
+											if (strcasecmp(bloque_archivo_control->archivo_id, archivo_destino->id) == 0
+													&& bloque_archivo_control->archivo_bloque == archivo_bloque_destino) {
+												list_remove(archivos_nodo, i);
+												break;
+											}
+										}
+										chequear_baja_archivo(archivo_destino, archivo_bloque_destino);
+									} else {
+										ocupado = true;
 									}
-								}
 
-								t_list* archivos_nodo = dictionary_get(bloques_nodos_archivos, nodo_destino->nodo_id);
+									t_copia_self * duplicado = create_copia(copia_origen->archivo_bloque, nodo_destino,
+											copia_origen->archivo_id, bloque_destino, ocupado);
+									asignar_copia_a_bloque_archivo(bloque_archivo, duplicado);
 
-								for (i = 0; i < archivos_nodo->elements_count; i++) {
-									t_bloque_archivo_control_self* bloque_archivo_control = list_get(archivos_nodo, i);
-									if (strcasecmp(bloque_archivo_control->archivo_id, archivo_destino->id) == 0
-											&& bloque_archivo_control->archivo_bloque == archivo_bloque_destino) {
-										list_remove(archivos_nodo, i);
-										break;
-									}
+									txt_write_in_stdout("El bloque fue copiado exitosamente.\n");
+								} else {
+									txt_write_in_stdout("El bloque ya existe en el nodo indicado.\n");
 								}
-								chequear_baja_archivo(archivo_destino, archivo_bloque_destino);
 							} else {
-								ocupado = true;
+								txt_write_in_stdout("El nodo destino esta inactivo.\n");
 							}
-
-							t_copia_self * duplicado = create_copia(copia_origen->archivo_bloque, nodo_destino,
-									copia_origen->archivo_id, bloque_destino, ocupado);
-							asignar_copia_a_bloque_archivo(bloque_archivo, duplicado);
-
-							txt_write_in_stdout("El bloque fue copiado exitosamente.\n");
 						} else {
-							txt_write_in_stdout("El nodo destino esta inactivo.\n");
+							txt_write_in_stdout("El nodo destino y origen son el mismo.\n");
 						}
 					} else {
 						txt_write_in_stdout("No se encontro el nodo destino indicado.\n");

@@ -212,9 +212,13 @@ void* consola() {
 					ver_bloque(comandos[2], (int) strtol(comandos[3], (char **)NULL, 10));
 
 		if (strcmp(comandos[0], "delete") == 0)
-			if (strcmp(comandos[1], "bloque") == 0)
+			if (strcmp(comandos[1], "bloque") == 0) {
 				if (comandos[2] != NULL && comandos[3] != NULL)
-					borrar_bloque(comandos[2], (int) strtol(comandos[3], (char **)NULL, 10));
+					borrar_bloque(comandos[2], (int) strtol(comandos[3], (char **) NULL, 10));
+			} else if (strcmp(comandos[1], "dir") == 0) {
+				if (comandos[2] != NULL)
+					eliminar_directorio(comandos[2]);
+			}
 
 		if (strcmp(comandos[0], "ls") == 0) {
 			if (comandos[1] == NULL)
@@ -251,30 +255,72 @@ void iniciar() {
 	directorios = malloc(sizeof(t_directorios_self));
 	directorios->directorios = list_create();
 	directorios->contador = 0;
+	directorios->contador_directorios = 0;
 }
 
 void inicio_mock(){
-	alta_nodo("J");
-	alta_nodo("H");
-	alta_nodo("L");
+//	alta_nodo("J");
+//	alta_nodo("H");
+//	alta_nodo("L");
+//
+//	copiar_archivo_a_mdfs("/home/utnso/Escritorio/Nuevo.txt", "/prueba");
+//	listar_bloques_archivo("/prueba/Nuevo.txt");
+//
+//	copiar_bloque("H", 1, "L", 2);
+//	listar_bloques_archivo("/prueba/Nuevo.txt");
+//
+//	copiar_archivo_a_mdfs("/home/utnso/Escritorio/Nuevo.txt", "/prueba/hola");
+//	listar_bloques_archivo("/prueba/hola/Nuevo.txt");
+//
+//	copiar_bloque("L", 1, "L", 3);
+//	listar_bloques_archivo("/prueba/Nuevo.txt");
+//	listar_bloques_archivo("/prueba/hola/Nuevo.txt");
+//
+//	borrar_bloque("J", 2);
+//	listar_bloques_archivo("/prueba/Nuevo.txt");
+//
+//	baja_nodo("H");
 
-	copiar_archivo_a_mdfs("/home/utnso/Escritorio/Nuevo.txt", "/prueba");
-	listar_bloques_archivo("/prueba/Nuevo.txt");
-
-	copiar_bloque("H", 1, "L", 2);
-	listar_bloques_archivo("/prueba/Nuevo.txt");
-
-	copiar_archivo_a_mdfs("/home/utnso/Escritorio/Nuevo.txt", "/prueba/hola");
-	listar_bloques_archivo("/prueba/hola/Nuevo.txt");
-
-	copiar_bloque("L", 1, "L", 3);
-	listar_bloques_archivo("/prueba/Nuevo.txt");
-	listar_bloques_archivo("/prueba/hola/Nuevo.txt");
-
-	borrar_bloque("J", 2);
-	listar_bloques_archivo("/prueba/Nuevo.txt");
-
-	baja_nodo("H");
+	crear_directorio(
+			"/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola", "hola");
+	crear_directorio(
+			"/hola1/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola", "hola");
+	crear_directorio(
+			"/hola2/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola", "hola");
+	crear_directorio(
+			"/hola3/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola", "hola");
+	crear_directorio(
+			"/hola4/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola", "hola");
+	crear_directorio(
+			"/hola5/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola", "hola");
+	crear_directorio(
+			"/hola6/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola", "hola");
+	crear_directorio(
+			"/hola7/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola", "hola");
+	crear_directorio(
+			"/hola8/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola", "hola");
+	crear_directorio(
+			"/hola9/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola", "hola");
+	crear_directorio(
+			"/hola10/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola", "hola");
+	crear_directorio(
+			"/hola11/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola", "hola");
+	crear_directorio(
+			"/hola12/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola", "hola");
+	crear_directorio(
+			"/hola13/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola", "hola");
+	crear_directorio(
+			"/hola14/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola", "hola");
+	crear_directorio(
+			"/hola15/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola", "hola");
+	crear_directorio(
+			"/hola16/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola", "hola");
+	crear_directorio(
+			"/hola17/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola", "hola");
+	crear_directorio(
+			"/hola18/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola", "hola");
+	crear_directorio(
+			"/hola19/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola", "hola");
 }
 
 int main(int argc, char *argv[]) {
@@ -282,7 +328,7 @@ int main(int argc, char *argv[]) {
 
 	iniciar();
 
-//	inicio_mock();
+	inicio_mock();
 
 	consola();
 }

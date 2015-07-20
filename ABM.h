@@ -22,6 +22,7 @@
 #include <commons/collections/list.h>
 #include <mensajeria/mensajes.h>
 
+#define TAMANIO_MAXIMO_DIRECTORIOS 1024
 #define CANTIDAD_BLOQUES_NODO_DEFAULT 50
 #define TAMANIO_BLOQUE_NODO 20971520
 #define ARCHIVO_NUEVO "/home/utnso/Escritorio/Nuevo.txt"
@@ -30,6 +31,7 @@
 typedef struct {
 	t_list* directorios;
 	unsigned long contador;
+	int contador_directorios;
 } t_directorios_self;
 
 typedef struct {
