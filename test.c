@@ -180,10 +180,16 @@ void* consola() {
 			}
 		}
 
-		if (strcmp(comandos[0], "copy") == 0)
+		if (strcmp(comandos[0], "copy") == 0) {
 			if (strcmp(comandos[1], "file") == 0)
 				if (comandos[2] != NULL)
 					copiar_archivo_a_mdfs(comandos[2], comandos[3]);
+
+			if (strcmp(comandos[1], "bloque") == 0)
+				if (comandos[2] != NULL && comandos[3])
+					copiar_bloque(comandos[2], (int) strtol(comandos[3], (char **) NULL, 10), comandos[4],
+							(int) strtol(comandos[5], (char **) NULL, 10));
+		}
 
 		if (strcmp(comandos[0], "export") == 0)
 			if (strcmp(comandos[1], "file") == 0)
@@ -193,7 +199,7 @@ void* consola() {
 		if (strcmp(comandos[0], "create") == 0)
 			if (strcmp(comandos[1], "dir") == 0)
 				if (comandos[2] != NULL)
-					crear_dilrectorio(comandos[3], comandos[2]);
+					crear_directorio(comandos[3], comandos[2]);
 
 		if (strcmp(comandos[0], "rename") == 0)
 			if (strcmp(comandos[1], "dir") == 0)
@@ -247,10 +253,36 @@ void iniciar() {
 	directorios->contador = 0;
 }
 
+void inicio_mock(){
+	alta_nodo("J");
+	alta_nodo("H");
+	alta_nodo("L");
+
+	copiar_archivo_a_mdfs("/home/utnso/Escritorio/Nuevo.txt", "/prueba");
+	listar_bloques_archivo("/prueba/Nuevo.txt");
+
+	copiar_bloque("H", 1, "L", 2);
+	listar_bloques_archivo("/prueba/Nuevo.txt");
+
+	copiar_archivo_a_mdfs("/home/utnso/Escritorio/Nuevo.txt", "/prueba/hola");
+	listar_bloques_archivo("/prueba/hola/Nuevo.txt");
+
+	copiar_bloque("L", 1, "L", 3);
+	listar_bloques_archivo("/prueba/Nuevo.txt");
+	listar_bloques_archivo("/prueba/hola/Nuevo.txt");
+
+	borrar_bloque("J", 2);
+	listar_bloques_archivo("/prueba/Nuevo.txt");
+
+	baja_nodo("H");
+}
+
 int main(int argc, char *argv[]) {
 	txt_write_in_stdout("Bienvenido!\n");
 
 	iniciar();
+
+//	inicio_mock();
 
 	consola();
 }

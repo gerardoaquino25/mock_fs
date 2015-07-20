@@ -7,12 +7,21 @@ start nodo B
 start nodo C
 
 copy file /home/utnso/Escritorio/Nuevo2.txt /prueba
+copy file /home/utnso/Escritorio/Nuevo.txt /prueba
 
 ls bloques /prueba/Nuevo2.txt
 
+ls bloques /prueba/Nuevo.txt
+
+ls bloques /prueba/hola/Nuevo.txt
+
 get bloque /prueba/Nuevo2.txt 0
 
-delete bloque /prueba/Nuevo2.txt 0
+delete bloque A 1
+
+copy bloque A 1 K 2
+
+ls nodos
 
 
 COMANDOS
@@ -41,3 +50,8 @@ COMANDOS
 		delete nodo nombre
 
 	-OTROS:
+
+- Chequear tamano maximos de directorios - 1024.
+- Enviar a nodo cada 20MB.
+- Al copiar un bloque, validar que lo que se copia no sea una copia de un mismo bloque de archivo que ya se encuentra en el mismo nodo.
+- Validar disponibilidad(Concurrencia) de archivo.
