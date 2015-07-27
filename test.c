@@ -1,5 +1,10 @@
 #include "ABM.h"
 
+typedef struct readThreadParams {
+    char* nombre;
+    int escritura;
+} t_auxiliar;
+
 void prueba_ABM_directorio() {
 	txt_write_in_stdout("CREACION DE CARPETAS\n");
 	crear_directorio("", "hola");
@@ -73,6 +78,16 @@ void prueba_ABM_directorio() {
 	txt_write_in_stdout("\n");
 }
 
+void bloquear_archivo2(void *context){
+	t_auxiliar *readParams = context;
+	bloquear_archivo(readParams->nombre, readParams->escritura);
+}
+
+void desbloquear_archivo2(void *context){
+	t_auxiliar *readParams = context;
+	desbloquear_archivo(readParams->nombre, readParams->escritura);
+}
+
 void prueba_copia_archivo() {
 	alta_nodo("A");
 	alta_nodo("B");
@@ -134,8 +149,7 @@ void* consola() {
 						while (split_ruta[j] != NULL) {
 							j++;
 						}
-						int lenght = string_length(ruta)
-								- string_length(split_ruta[j - 1]);
+						int lenght = string_length(ruta) - string_length(split_ruta[j - 1]);
 
 						ruta = string_substring(ruta, 0, lenght);
 					}
@@ -151,8 +165,7 @@ void* consola() {
 						if (get_directorio_by_ruta(ruta_aux) != NULL)
 							ruta = string_duplicate(ruta_aux);
 						else
-							txt_write_in_stdout(
-									"No existe la ruta indicada.\n");
+							txt_write_in_stdout("No existe la ruta indicada.\n");
 					}
 				}
 			}
@@ -163,8 +176,7 @@ void* consola() {
 				if (comandos[2] != NULL) {
 					alta_nodo(comandos[2]);
 				} else {
-					txt_write_in_stdout(
-							"Debe indicar un nombre para el nodo.\n");
+					txt_write_in_stdout("Debe indicar un nombre para el nodo.\n");
 				}
 			}
 		}
@@ -174,8 +186,7 @@ void* consola() {
 				if (comandos[2] != NULL) {
 					baja_nodo(comandos[2]);
 				} else {
-					txt_write_in_stdout(
-							"Debe indicar un nombre para el nodo.\n");
+					txt_write_in_stdout("Debe indicar un nombre para el nodo.\n");
 				}
 			}
 		}
@@ -209,7 +220,7 @@ void* consola() {
 		if (strcmp(comandos[0], "get") == 0)
 			if (strcmp(comandos[1], "bloque") == 0)
 				if (comandos[2] != NULL && comandos[3] != NULL)
-					ver_bloque(comandos[2], (int) strtol(comandos[3], (char **)NULL, 10));
+					ver_bloque(comandos[2], (int) strtol(comandos[3], (char **) NULL, 10));
 
 		if (strcmp(comandos[0], "delete") == 0)
 			if (strcmp(comandos[1], "bloque") == 0) {
@@ -240,22 +251,70 @@ void* consola() {
 			}
 		}
 
+		if (strcmp(comandos[0], "agregar") == 0) {
+			if (comandos[1] != NULL) {
+				agregar_semaforo_archivo(comandos[1]);
+			}
+		}
+
+		if (strcmp(comandos[0], "bloquear") == 0) {
+			if (comandos[1] != NULL) {
+				pthread_t hilo_uno;
+				pthread_t hilo_dos;
+				int escritura = comandos[2] != NULL;
+				t_auxiliar readParams;
+			    readParams.nombre = string_duplicate(comandos[1]);
+			    readParams.escritura = escritura;
+
+				pthread_create(&hilo_uno, NULL, (void*) bloquear_archivo2, &readParams);
+			}
+		}
+
+		if (strcmp(comandos[0], "desbloquear") == 0){
+			if (comandos[1] != NULL) {
+				pthread_t hilo_uno;
+				int escritura = comandos[2] != NULL;
+				t_auxiliar readParams;
+			    readParams.nombre = comandos[1];
+			    readParams.escritura = escritura;
+
+				pthread_create(&hilo_uno, NULL, (void*) desbloquear_archivo2, &readParams);
+			}
+		}
+
 		if (strcmp(comandos[0], "exit") == 0)
 			exit(1);
 	}
 }
 
 void iniciar() {
-	contador_archivos = 0;
-	contador_nodo = 0;
-	archivos = list_create();
-	nodos = list_create();
-	bloques_nodos_archivos = dictionary_create();
-	bloques_nodo_disponible = dictionary_create();
+	semaforos_archivo = malloc(sizeof(t_control_self));
+	semaforos_archivo->lectura = dictionary_create();
+	semaforos_archivo->escritura = dictionary_create();
+	semaforos_archivo->intermedio = dictionary_create();
+
+	semaforos_bloque = malloc(sizeof(t_control_self));
+	semaforos_bloque->lectura = dictionary_create();
+	semaforos_bloque->escritura = dictionary_create();
+	semaforos_bloque->intermedio = dictionary_create();
+
+	semaforos_nodo = malloc(sizeof(t_control_self));
+	semaforos_nodo->lectura = dictionary_create();
+	semaforos_nodo->escritura = dictionary_create();
+	semaforos_nodo->intermedio = dictionary_create();
+
 	directorios = malloc(sizeof(t_directorios_self));
 	directorios->directorios = list_create();
 	directorios->contador = 0;
 	directorios->contador_directorios = 0;
+
+	archivos = list_create();
+	nodos = list_create();
+	bloques_nodos_archivos = dictionary_create();
+	bloques_nodo_disponible = dictionary_create();
+
+	contador_archivos = 0;
+	contador_nodo = 0;
 }
 
 void inicio_mock(){
@@ -323,12 +382,11 @@ void inicio_mock(){
 			"/hola19/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola", "hola");
 }
 
+
+
 int main(int argc, char *argv[]) {
 	txt_write_in_stdout("Bienvenido!\n");
-
 	iniciar();
-
-	inicio_mock();
-
+//	inicio_mock();
 	consola();
 }

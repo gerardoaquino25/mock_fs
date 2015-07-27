@@ -21,6 +21,7 @@
 
 #include <commons/collections/list.h>
 #include <mensajeria/mensajes.h>
+#include <semaphore.h>
 
 #define TAMANIO_MAXIMO_DIRECTORIOS 1024
 #define CANTIDAD_BLOQUES_NODO_DEFAULT 50
@@ -91,12 +92,28 @@ typedef struct {
 	int archivo_bloque;
 } t_bloque_archivo_control_self;
 
+typedef struct {
+	sem_t* semaforo;
+	int contador;
+} t_semaforo_self;
+
+typedef struct {
+	t_dictionary* lectura;
+	t_dictionary* escritura;
+	t_dictionary* intermedio;
+} t_control_self;
+
 t_list * archivos; //Lista de t_archivos
 t_list * nodos; //Lista de t_nodos
 t_dictionary * bloques_nodos_archivos;
 t_dictionary * bloques_nodo_disponible;
 unsigned long contador_archivos;
 unsigned long contador_nodo;
+
+
+t_control_self* semaforos_archivo;
+t_control_self* semaforos_bloque;
+t_control_self* semaforos_nodo;
 
 t_directorios_self* directorios;
 t_archivo_datos_self * datos; //Estructura temporal para simular la obtencion de datos del nodo.
