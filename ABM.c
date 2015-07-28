@@ -24,23 +24,34 @@ void agregar_semaforo(char* id, t_control_self* semaforo) {
 	dictionary_put(semaforo->intermedio, id, intermedio);
 }
 
-void desbloquear(char* id, int modo_escritura, t_control_self* semaforo) {
+void desbloquear(char* id, int modo_escritura, t_control_self* semaforo, int modo_bloqueo_total) {
 	t_semaforo_self * intermedio = dictionary_get(semaforo->intermedio, id);
 	sem_wait(intermedio->semaforo);
 
 	t_semaforo_self * escritura = dictionary_get(semaforo->escritura, id);
-	if (modo_escritura) {
+	if (modo_bloqueo_total == 0) {
+		if (modo_escritura) {
+			t_semaforo_self * lectura = dictionary_get(semaforo->lectura, id);
+			sem_post(escritura->semaforo);
+			int i;
+			for (i = 0; i <= lectura->contador; i++)
+				sem_post(lectura->semaforo);
+			sem_post(intermedio->semaforo);
+		} else {
+			escritura->contador--;
+			if (escritura->contador == 0)
+				sem_post(escritura->semaforo);
+			sem_post(intermedio->semaforo);
+		}
+	} else {
 		t_semaforo_self * lectura = dictionary_get(semaforo->lectura, id);
-		sem_post(escritura->semaforo);
-		int i;
+		int i, value;
 		for (i = 0; i <= lectura->contador; i++)
 			sem_post(lectura->semaforo);
-		sem_post(intermedio->semaforo);
-	} else {
-		escritura->contador--;
-		if (escritura->contador == 0)
+		sem_getvalue(escritura, value);
+
+		if (value < 1)
 			sem_post(escritura->semaforo);
-		sem_post(intermedio->semaforo);
 	}
 }
 
@@ -61,82 +72,110 @@ void bloquear_lectura(char* id, t_semaforo_self * intermedio, t_control_self * s
 	sem_post(intermedio->semaforo);
 }
 
-void bloquear(char* id, int modo_escritura, t_control_self * semaforo) {
+void bloquear(char* id, int modo_escritura, t_control_self * semaforo, int modo_bloqueo_total) {
 	int value;
 	t_semaforo_self * intermedio = dictionary_get(semaforo->intermedio, id);
 	sem_wait(intermedio->semaforo);
 
-	if (modo_escritura) {
-		txt_write_in_stdout("ESCRITURA");
-		txt_write_in_stdout("\n");
-		t_semaforo_self * escritura = dictionary_get(semaforo->escritura, id);
-		sem_getvalue(escritura->semaforo, &value);
+	if (modo_bloqueo_total == 0) {
+		if (modo_escritura) {
+			txt_write_in_stdout("ESCRITURA");
+			txt_write_in_stdout("\n");
+			t_semaforo_self * escritura = dictionary_get(semaforo->escritura, id);
+			sem_getvalue(escritura->semaforo, &value);
 
-		if (value > 0) {
-			sem_wait(escritura->semaforo);
-			bloquear_escritura(id, intermedio, semaforo);
+			if (value > 0) {
+				sem_wait(escritura->semaforo);
+				bloquear_escritura(id, intermedio, semaforo);
+			} else {
+				txt_write_in_stdout("NO PUEDE ESCRIBIR");
+				txt_write_in_stdout("\n");
+				sem_post(intermedio->semaforo);
+				txt_write_in_stdout("ESPERA ESCRITURA");
+				txt_write_in_stdout("\n");
+				sem_wait(escritura->semaforo);
+				txt_write_in_stdout("RETOMA ESCRITURA");
+				txt_write_in_stdout("\n");
+				bloquear_escritura(id, intermedio, semaforo);
+			}
 		} else {
-			txt_write_in_stdout("NO PUEDE ESCRIBIR");
+			txt_write_in_stdout("LECTURA");
 			txt_write_in_stdout("\n");
-			sem_post(intermedio->semaforo);
-			txt_write_in_stdout("ESPERA ESCRITURA");
-			txt_write_in_stdout("\n");
-			sem_wait(escritura->semaforo);
-			txt_write_in_stdout("RETOMA ESCRITURA");
-			txt_write_in_stdout("\n");
-			bloquear_escritura(id, intermedio, semaforo);
+			t_semaforo_self * lectura = dictionary_get(semaforo->lectura, id);
+			sem_getvalue(lectura->semaforo, &value);
+
+			if (value > 0) {
+				bloquear_lectura(id, intermedio, semaforo);
+			} else {
+				lectura->contador++;
+				txt_write_in_stdout("NO PUEDE LEER");
+				txt_write_in_stdout("\n");
+				sem_post(intermedio->semaforo);
+				txt_write_in_stdout("ESPERA LECTURA");
+				txt_write_in_stdout("\n");
+				sem_wait(lectura->semaforo);
+				txt_write_in_stdout("RETOMA LECTURA");
+				txt_write_in_stdout("\n");
+				bloquear_lectura(id, intermedio, semaforo);
+			}
 		}
 	} else {
-		txt_write_in_stdout("LECTURA");
-		txt_write_in_stdout("\n");
+		int value_lectura, value_escritura;
 		t_semaforo_self * lectura = dictionary_get(semaforo->lectura, id);
-		sem_getvalue(lectura->semaforo, &value);
+		sem_getvalue(lectura->semaforo, &value_lectura);
+		t_semaforo_self * escritura = dictionary_get(semaforo->escritura, id);
+		sem_getvalue(lectura->semaforo, &value_escritura);
 
-		if (value > 0) {
-			bloquear_lectura(id, intermedio, semaforo);
-		} else {
-			lectura->contador++;
-			txt_write_in_stdout("NO PUEDE LEER");
-			txt_write_in_stdout("\n");
-			sem_post(intermedio->semaforo);
-			txt_write_in_stdout("ESPERA LECTURA");
-			txt_write_in_stdout("\n");
+		if (value_lectura && value_escritura) {
 			sem_wait(lectura->semaforo);
-			txt_write_in_stdout("RETOMA LECTURA");
-			txt_write_in_stdout("\n");
-			bloquear_lectura(id, intermedio, semaforo);
+			sem_wait(escritura->semaforo);
+			sem_post(intermedio->semaforo);
+		} else if (value_lectura == 0 && value_escritura == 0) {
+			sem_post(intermedio->semaforo);
+			sem_wait(lectura->semaforo);
+			sem_wait(escritura->semaforo);
+		} else {
+			if (value_lectura) {
+				sem_wait(lectura->semaforo);
+				sem_post(intermedio->semaforo);
+				sem_wait(escritura->semaforo);
+			} else {
+				sem_wait(escritura->semaforo);
+				sem_post(intermedio->semaforo);
+				sem_wait(lectura->semaforo);
+			}
 		}
 	}
 }
 
-void desbloquear_nodo(char* nodo_id, int modo_escritura) {
-	desbloquear(nodo_id, modo_escritura, semaforos_nodo);
+void desbloquear_nodo(char* nodo_id, int modo_escritura, int modo_bloqueo_total) {
+	desbloquear(nodo_id, modo_escritura, semaforos_nodo, modo_bloqueo_total);
 }
 
-void bloquear_nodo(char* nodo_id, int modo_escritura) {
-	bloquear(nodo_id, modo_escritura, semaforos_nodo);
+void bloquear_nodo(char* nodo_id, int modo_escritura, int modo_bloqueo_total) {
+	bloquear(nodo_id, modo_escritura, semaforos_nodo, modo_bloqueo_total);
 }
 
 void agregar_semaforo_nodo(char* nodo_id) {
 	agregar_semaforo(nodo_id, semaforos_nodo);
 }
 
-void desbloquear_bloque(char* nodo_id, int bloque_id, int modo_escritura) {
+void desbloquear_bloque(char* nodo_id, int bloque_id, int modo_escritura, int modo_bloqueo_total) {
 	char * clave = string_new();
 	string_append(&clave, nodo_id);
 	string_append(&clave, "-");
 	string_append(&clave, string_itoa(bloque_id));
 
-	desbloquear(clave, modo_escritura, semaforos_bloque);
+	desbloquear(clave, modo_escritura, semaforos_bloque, modo_bloqueo_total);
 }
 
-void bloquear_bloque(char* nodo_id, int bloque_id, int modo_escritura) {
+void bloquear_bloque(char* nodo_id, int bloque_id, int modo_escritura, int modo_bloqueo_total) {
 	char * clave = string_new();
 	string_append(&clave, nodo_id);
 	string_append(&clave, "-");
 	string_append(&clave, string_itoa(bloque_id));
 
-	bloquear(clave, modo_escritura, semaforos_bloque);
+	bloquear(clave, modo_escritura, semaforos_bloque, modo_bloqueo_total);
 }
 
 void agregar_semaforo_bloque(char* nodo_id, int bloque_id) {
@@ -148,12 +187,12 @@ void agregar_semaforo_bloque(char* nodo_id, int bloque_id) {
 	agregar_semaforo(clave, semaforos_bloque);
 }
 
-void desbloquear_archivo(char* archivo_id, int modo_escritura) {
-	desbloquear(archivo_id, modo_escritura, semaforos_archivo);
+void desbloquear_archivo(char* archivo_id, int modo_escritura, int modo_bloqueo_total) {
+	desbloquear(archivo_id, modo_escritura, semaforos_archivo, modo_bloqueo_total);
 }
 
-void bloquear_archivo(char* archivo_id, int modo_escritura) {
-	bloquear(archivo_id, modo_escritura, semaforos_archivo);
+void bloquear_archivo(char* archivo_id, int modo_escritura, int modo_bloqueo_total) {
+	bloquear(archivo_id, modo_escritura, semaforos_archivo, modo_bloqueo_total);
 }
 
 void agregar_semaforo_archivo(char* archivo_id) {
@@ -325,6 +364,7 @@ void alta_nodo(char* nombre) {
 		nodo->bloques_disponibles = CANTIDAD_BLOQUES_NODO_DEFAULT;
 		nodo->bloques = dictionary_create();
 		add_nodo_to_nodos(nodo);
+		agregar_semaforo_nodo(nodo->nodo_id);
 
 		txt_write_in_stdout("Se agrego el nodo ");
 		txt_write_in_stdout(nombre);
@@ -332,6 +372,7 @@ void alta_nodo(char* nombre) {
 	} else {
 		if (nodoAux->estado == INVALIDO) {
 			reactivar_nodo(nodoAux);
+			desbloquear_nodo(nodoAux->nodo_id, 0, 1);
 			txt_write_in_stdout("Se reactivo el nodo ");
 			txt_write_in_stdout(nombre);
 			txt_write_in_stdout(".\n");
@@ -368,7 +409,7 @@ void chequear_baja_archivo(t_archivo_self* archivo, int archivo_bloque) {
 }
 
 void baja_nodo(char* nombre) {
-	//TODO: detener conexión con nodo.
+//TODO: detener conexión con nodo.
 	t_nodo_self* nodo = find_nodo(nombre);
 	if (nodo != NULL) {
 		if (nodo->estado != INVALIDO) {
@@ -376,6 +417,7 @@ void baja_nodo(char* nombre) {
 			nodo->estado = 0;
 			t_list* archivos_nodo = dictionary_get(bloques_nodos_archivos, nodo->nodo_id);
 
+			bloquear_nodo(nodo->nodo_id, 0, 1);
 			if (archivos_nodo != NULL) {
 				for (i = 0; i < list_size(archivos_nodo); i++) {
 					t_bloque_archivo_control_self* bloque_archivo_control = list_get(archivos_nodo, i);
@@ -383,6 +425,8 @@ void baja_nodo(char* nombre) {
 					chequear_baja_archivo(archivo, bloque_archivo_control->archivo_bloque);
 				}
 			}
+			desbloquear_nodo(nodo->nodo_id, 0, 1);
+
 			txt_write_in_stdout("El nodo ");
 			txt_write_in_stdout(nombre);
 			txt_write_in_stdout(" se ha dado de baja.\n");
@@ -508,7 +552,7 @@ t_copia_self* create_copia(int bloque, t_nodo_self* nodo, char* archivo_id, int 
 	copia->archivo_id = string_duplicate(archivo_id);
 	asignar_bloque_nodo_a_copia(copia, nodo, nodo_bloque_destino, nodo_ocupado);
 
-	// Agrega el nodo_bloque usado a la lista de control.
+// Agrega el nodo_bloque usado a la lista de control.
 	t_bloque_archivo_control_self* control;
 	control = malloc(sizeof(t_bloque_archivo_control_self));
 	control->archivo_bloque = bloque;
@@ -609,11 +653,11 @@ t_archivo_datos_self* dividir_archivo(char* nombre) {
 }
 
 void borrado_fisico_nodo(char* nodo) {
-	//TODO: Solicitud de borrado de informacion de nodo.
+//TODO: Solicitud de borrado de informacion de nodo.
 }
 
 void formatear_mdfs() {
-	//TODO: Test.
+//TODO: Test.
 	int i, j;
 	for (i = 0; i < list_size(nodos); i++) {
 		t_nodo_self* nodo = list_get(nodos, i);
@@ -906,13 +950,16 @@ void copiar_archivo_a_mdfs(char* ruta, char* destino_aux) {
 
 					list_add(datos->bloques, segmento);
 					//TODO: Enviar datos a nodos.
-					t_copia_self* copia1 = create_copia(i, find_nodo_disponible(i, archivo), archivo->id, NULL, false);
+					t_copia_self* copia1 = create_copia(i, find_nodo_disponible(i, archivo), archivo->id, NULL,
+					false);
 					asignar_copia_a_bloque_archivo(bloque, copia1);
 
-					t_copia_self* copia2 = create_copia(i, find_nodo_disponible(i, archivo), archivo->id, NULL, false);
+					t_copia_self* copia2 = create_copia(i, find_nodo_disponible(i, archivo), archivo->id, NULL,
+					false);
 					asignar_copia_a_bloque_archivo(bloque, copia2);
 
-					t_copia_self* copia3 = create_copia(i, find_nodo_disponible(i, archivo), archivo->id, NULL, false);
+					t_copia_self* copia3 = create_copia(i, find_nodo_disponible(i, archivo), archivo->id, NULL,
+					false);
 					asignar_copia_a_bloque_archivo(bloque, copia3);
 				}
 				archivo->estado = VALIDO;
@@ -1076,7 +1123,7 @@ void listar_directorios() {
 }
 
 void eliminar_directorio(char* ruta) {
-	//TODO: Eliminar archivos contenidos en los directorios.
+//TODO: Eliminar archivos contenidos en los directorios.
 	t_directorio_self* directorio = get_directorio_by_ruta(ruta);
 	t_list* directorios_a_eliminar = list_create();
 	t_list* directorios_actuales = list_create();
@@ -1176,7 +1223,7 @@ int es_subdirectorio_by_directorio(t_directorio_self* ruta, t_directorio_self* d
 }
 
 void mover_directorio(char* ruta, char* destino) {
-	//TODO: Mover archivos contenidos en directorios.
+//TODO: Mover archivos contenidos en directorios.
 	t_directorio_self* directorio_origen = get_directorio_by_ruta(ruta);
 	t_directorio_self* directorio_destino = NULL;
 	char* padre_final = strdup("0");
@@ -1228,7 +1275,7 @@ void mover_directorio(char* ruta, char* destino) {
 }
 
 int reconstruir_archivo(t_list* bloques, char * ruta, char* nombre) {
-	//TODO: Reconstruir archivo.
+//TODO: Reconstruir archivo.
 	int i;
 	char* ruta_aux = string_new();
 
@@ -1252,8 +1299,8 @@ int reconstruir_archivo(t_list* bloques, char * ruta, char* nombre) {
 }
 
 char* get_data_from_nodo(char* nombre, t_copia_self * bloque, int campo_temporal) {
-	//TODO: Solicitar bloque a nodo.
-	//TEMPORAL: Se va a agregar lo solicitado al nodo.
+//TODO: Solicitar bloque a nodo.
+//TEMPORAL: Se va a agregar lo solicitado al nodo.
 	return list_get(datos->bloques, campo_temporal);
 }
 
@@ -1376,7 +1423,8 @@ void borrar_bloque(char* nombre, int bloque_nodo_id) {
 				t_copia_self * copia = dictionary_get(nodo->bloques, string_itoa(bloque_nodo_id));
 
 				if (copia != NULL) {
-					borrado_fisico_bloque();	//TODO: borrado fisico de bloque del nodo.
+					bloquear_bloque(nodo->nodo_id, bloque_nodo_id, true, false);
+					borrado_fisico_bloque(); //TODO: borrado fisico de bloque del nodo.
 					t_archivo_self* archivo = find_archivo_by_id(copia->archivo_id, archivos);
 					t_bloque_archivo_self * bloque = dictionary_get(archivo->bloques, string_itoa(copia->archivo_bloque));
 					int archivo_bloque = copia->archivo_bloque;
@@ -1404,8 +1452,8 @@ void borrar_bloque(char* nombre, int bloque_nodo_id) {
 							break;
 						}
 					}
-
 					chequear_baja_archivo(archivo, archivo_bloque);
+					desbloquear_bloque(nodo->nodo_id, bloque_nodo_id, true, false);
 
 					txt_write_in_stdout("El bloque fue borrado exitosamente.\n");
 				} else {
@@ -1506,7 +1554,7 @@ int existe_copia_en_nodo(t_bloque_archivo_self* bloque, t_nodo_self* nodo) {
 }
 
 void copiar_bloque(char* nombre_nodo_origen, int bloque_origen, char* nombre_nodo_destino, int bloque_destino) {
-	//TODO: Copiar fisicamente al nodo indicado.
+//TODO: Copiar fisicamente al nodo indicado.
 
 	if (bloque_origen <= TAMANIO_BLOQUE_NODO && bloque_destino <= TAMANIO_BLOQUE_NODO) {
 		t_nodo_self * nodo_origen = find_nodo(nombre_nodo_origen);
@@ -1531,6 +1579,7 @@ void copiar_bloque(char* nombre_nodo_origen, int bloque_origen, char* nombre_nod
 								t_copia_self * copia_destino = dictionary_get(nodo_destino->bloques, string_itoa(bloque_destino));
 
 								if (copia_destino != NULL) {
+									bloquear_bloque(nodo_destino->nodo_id, bloque_destino, 1, 0);
 
 									if (existe_copia_en_nodo(bloque_archivo, nodo_destino)) {
 										int i;
@@ -1573,7 +1622,7 @@ void copiar_bloque(char* nombre_nodo_origen, int bloque_origen, char* nombre_nod
 
 									txt_write_in_stdout("El bloque fue copiado exitosamente.\n");
 								} else {
-									txt_write_in_stdout("El bloque ya existe en el nodo indicado.\n");
+									txt_write_in_stdout("El bloque no existe en el nodo indicado.\n");
 								}
 							} else {
 								txt_write_in_stdout("El nodo destino esta inactivo.\n");
