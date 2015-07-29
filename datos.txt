@@ -57,3 +57,7 @@ PROBAR:
 
 FALTANTE:
 - Validar disponibilidad(Concurrencia) de archivo.
+
+
+db.global.insert({"id" : "contadores", "contador_directorios" : 0, "contador_archivos" : 0, "contador_nodos" : 0})
+db.global.insert({"id" : "control", "control_directorios" : 0})

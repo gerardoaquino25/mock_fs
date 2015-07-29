@@ -22,14 +22,15 @@
 #include <commons/collections/list.h>
 #include <mensajeria/mensajes.h>
 #include <semaphore.h>
+#include <mongoc.h>
 
 #define TAMANIO_MAXIMO_DIRECTORIOS 1024
 #define CANTIDAD_BLOQUES_NODO_DEFAULT 50
 #define TAMANIO_BLOQUE_NODO 20971520
-#define ARCHIVO_NUEVO "/home/utnso/Escritorio/Nuevo.txt"
-#define ARCHIVO_NUEVO2 "/home/utnso/Escritorio/Nuevo2.txt"
 #define VALIDO 1
 #define INVALIDO 0
+#define MONGO_DB "utnso"
+#define MONGO_SERVER "mongodb://localhost:27017/"
 
 typedef struct {
 	t_list* directorios;
@@ -103,6 +104,11 @@ typedef struct {
 	t_dictionary* intermedio;
 } t_control_self;
 
+typedef struct {
+	sem_t* lectura;
+	sem_t* escritura;
+} t_control_semaforo_self;
+
 t_list * archivos; //Lista de t_archivos
 t_list * nodos; //Lista de t_nodos
 t_dictionary * bloques_nodos_archivos;
@@ -110,10 +116,19 @@ t_dictionary * bloques_nodo_disponible;
 unsigned long contador_archivos;
 unsigned long contador_nodo;
 
-
 t_control_self* semaforos_archivo;
 t_control_self* semaforos_bloque;
 t_control_self* semaforos_nodo;
+
+//t_control_contador_self* mutex_archivos_id;
+//t_control_contador_self* mutex_nodos_id;
+//t_control_contador_self* mutex_directorios_id;
+t_control_semaforo_self* semaforo_control_directorio;
+
+sem_t * m_archivos_id;
+sem_t * m_control_directorios;
+sem_t * m_directorios_id;
+sem_t * m_nodos_id;
 
 t_directorios_self* directorios;
 t_archivo_datos_self * datos; //Estructura temporal para simular la obtencion de datos del nodo.
@@ -156,7 +171,7 @@ t_nodo_self* find_nodo(char* nombre);
 /*
  *Agrega un t_nodo_tp nuevo a la lista de nodos.
  */
-void add_nodo_to_nodos(t_nodo_self* nodo);
+void add_nodo_to_nodos(t_nodo_self* nodo, int existente);
 
 /*
  * Inicializa la lista de control de bloques por nodo.
@@ -293,5 +308,22 @@ void ver_bloque(char* nombre, int bloque_id);
 void borrar_bloque(char* nombre, int bloque_id);
 
 void copiar_bloque(char* nombre_nodo_origen, int bloque_origen, char* nombre_nodo_destino, int bloque_destino);
+
+void mongo_delete(char* key, char* value, char* collection_name);
+
+void mongo_update_string(char* key_to_search, char* value_to_search, char* key_to_update, char* value_to_update,
+		char* collection_name);
+
+void mongo_update_integer(char* key_to_search, char* value_to_search, char* key_to_update, int value_to_update,
+		char* collection_name);
+
+void mongo_update_long(char* key_to_search, char* value_to_search, char* key_to_update, long value_to_update,
+		char* collection_name);
+
+void mongo_insert(char* key, char* value, char* collection_name);
+
+long mongo_get_long(char* key, char* compare_value, char* key_result, char* collection_name);
+
+int mongo_get_integer(char* key, char* compare_value, char* key_result, char* collection_name);
 
 #endif /* ABM_H_ */

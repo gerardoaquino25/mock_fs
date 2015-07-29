@@ -5,98 +5,25 @@ typedef struct readThreadParams {
     int escritura;
 } t_auxiliar;
 
-void prueba_ABM_directorio() {
-	txt_write_in_stdout("CREACION DE CARPETAS\n");
-	crear_directorio("", "hola");
-	crear_directorio("", "chau");
-	crear_directorio("/hola/como", "estas");
-	crear_directorio("/hola/como", "va");
-	crear_directorio("/hola/como", "andas");
-	crear_directorio("/hola/como", "caminas");
-	crear_directorio("/hola/como/estas", "vos");
-	crear_directorio("/hola/como/estas", "usted");
-	crear_directorio("/hola/como/estas", "chabon");
-	crear_directorio("/hola/como/andas", "vos");
-	crear_directorio("/hola/como/andas", "usted");
-	crear_directorio("/hola/como/andas", "chabon");
-	crear_directorio("/chau", "hasta");
-	crear_directorio("/eso/es", "nuevo");
-	listar_directorios();
+//sem_t* sema;
 
-	txt_write_in_stdout("\n");
+//void bloquear_archivo2(void *context){
+//	t_auxiliar *readParams = context;
+//	bloquear_archivo(readParams->nombre, readParams->escritura);
+//}
+//
+//void desbloquear_archivo2(void *context){
+//	t_auxiliar *readParams = context;
+//	desbloquear_archivo(readParams->nombre, readParams->escritura);
+//}
 
-	txt_write_in_stdout("RENOMBRAMIENTO DE CARPETAS\n");
-	renombrar_directorio("/hola", "holaAAA");
-	renombrar_directorio("/chau", "chauAAA");
-	renombrar_directorio("/holaAAA/como/estas", "estasAAA");
-	renombrar_directorio("/chauAAA/hasta", "hastaAAA");
-	renombrar_directorio("/eso/es/nuevo", "nuevoAAA");
-	listar_directorios();
-
-	txt_write_in_stdout("\n");
-
-	txt_write_in_stdout("MOVER CARPETAS\n");
-	mover_directorio("/holaAAA", "/hola");
-	listar_directorios();
-	txt_write_in_stdout("\n");
-	mover_directorio("/chauAAA", "/chau");
-	listar_directorios();
-	txt_write_in_stdout("\n");
-	mover_directorio("/hola/holaAAA/como/estasAAA", "/hola/holaAAA/como/estas");
-	listar_directorios();
-	txt_write_in_stdout("\n");
-	mover_directorio("/chau/chauAAA/hastaAAA", "/chau/chauAAA/hasta");
-	listar_directorios();
-	txt_write_in_stdout("\n");
-	mover_directorio("/eso/es/nuevoAAA", "/eso/es/nuevo");
-	listar_directorios();
-
-	txt_write_in_stdout("\n");
-
-	txt_write_in_stdout("VOLVER CARPETAS\n");
-	mover_directorio("/hola/holaAAA", " ");
-	listar_directorios();
-	txt_write_in_stdout("\n");
-	mover_directorio("/chau/chauAAA", "/");
-	listar_directorios();
-	txt_write_in_stdout("\n");
-	mover_directorio("/holaAAA/como/estas/estasAAA", "/holaAAA/como");
-	listar_directorios();
-	txt_write_in_stdout("\n");
-	mover_directorio("/chauAAA/hasta/hastaAAA", "/chauAAA");
-	listar_directorios();
-	txt_write_in_stdout("\n");
-	mover_directorio("/eso/es/nuevo/nuevoAAA", "/eso/es");
-	listar_directorios();
-
-	txt_write_in_stdout("MOVER CARPETAS\n");
-	mover_directorio("/holaAAA", "/chauAAA");
-	listar_directorios();
-	mover_directorio("/chauAAA", "/chauAAA/como/estasAAA");
-	listar_directorios();
-
-	txt_write_in_stdout("\n");
-}
-
-void bloquear_archivo2(void *context){
-	t_auxiliar *readParams = context;
-	bloquear_archivo(readParams->nombre, readParams->escritura);
-}
-
-void desbloquear_archivo2(void *context){
-	t_auxiliar *readParams = context;
-	desbloquear_archivo(readParams->nombre, readParams->escritura);
-}
-
-void prueba_copia_archivo() {
-	alta_nodo("A");
-	alta_nodo("B");
-	alta_nodo("C");
-
-	copiar_archivo_a_mdfs(ARCHIVO_NUEVO, "/home/utnso/Escritorio/");
-
-	copiar_archivo_a_local(ARCHIVO_NUEVO, "/home/utnso/Escritorio/Pruebas");
-}
+//void bloquear_archivo3(){
+//	bloquear_contador(sema);
+//}
+//
+//void desbloquear_archivo3(){
+//	desbloquear_contador(sema);
+//}
 
 int es_ruta(char* ruta){
 	if (ruta == NULL)
@@ -106,10 +33,6 @@ int es_ruta(char* ruta){
 		return 0;
 
 	return string_starts_with(ruta, "/") == true;
-}
-
-char* get_ruta(char * ruta){
-
 }
 
 void* consola() {
@@ -251,43 +174,71 @@ void* consola() {
 			}
 		}
 
-		if (strcmp(comandos[0], "agregar") == 0) {
-			if (comandos[1] != NULL) {
-				agregar_semaforo_archivo(comandos[1]);
-			}
-		}
-
-		if (strcmp(comandos[0], "bloquear") == 0) {
-			if (comandos[1] != NULL) {
-				pthread_t hilo_uno;
-				pthread_t hilo_dos;
-				int escritura = comandos[2] != NULL;
-				t_auxiliar readParams;
-			    readParams.nombre = string_duplicate(comandos[1]);
-			    readParams.escritura = escritura;
-
-				pthread_create(&hilo_uno, NULL, (void*) bloquear_archivo2, &readParams);
-			}
-		}
-
-		if (strcmp(comandos[0], "desbloquear") == 0){
-			if (comandos[1] != NULL) {
-				pthread_t hilo_uno;
-				int escritura = comandos[2] != NULL;
-				t_auxiliar readParams;
-			    readParams.nombre = comandos[1];
-			    readParams.escritura = escritura;
-
-				pthread_create(&hilo_uno, NULL, (void*) desbloquear_archivo2, &readParams);
-			}
-		}
+//		if (strcmp(comandos[0], "agregar") == 0) {
+//			if (comandos[1] != NULL) {
+//				agregar_semaforo_archivo(comandos[1]);
+//			}
+//		}
+//
+//		if (strcmp(comandos[0], "bloquear") == 0) {
+//			if (comandos[1] != NULL) {
+//				pthread_t hilo_uno;
+//				int escritura = comandos[2] != NULL;
+//				t_auxiliar readParams;
+//			    readParams.nombre = string_duplicate(comandos[1]);
+//			    readParams.escritura = escritura;
+//
+//				pthread_create(&hilo_uno, NULL, (void*) bloquear_archivo2, &readParams);
+//			}
+//		}
+//
+//		if (strcmp(comandos[0], "desbloquear") == 0){
+//			if (comandos[1] != NULL) {
+//				pthread_t hilo_uno;
+//				int escritura = comandos[2] != NULL;
+//				t_auxiliar readParams;
+//			    readParams.nombre = comandos[1];
+//			    readParams.escritura = escritura;
+//
+//				pthread_create(&hilo_uno, NULL, (void*) desbloquear_archivo2, &readParams);
+//			}
+//		}
+//
+//		if (strcmp(comandos[0], "limpiar") == 0) {
+//			limpiar_contador(sema);
+//		}
+//
+//		if (strcmp(comandos[0], "reiniciar") == 0) {
+//			reiniciar_contador(sema, 1000);
+//		}
+//
+//		if (strcmp(comandos[0], "bloquea") == 0) {
+//			pthread_t hilo_uno;
+//			pthread_create(&hilo_uno, NULL, (void*) bloquear_archivo3, NULL);
+//		}
+//
+//		if (strcmp(comandos[0], "desbloquea") == 0) {
+//			pthread_t hilo_uno;
+//			pthread_create(&hilo_uno, NULL, (void*) desbloquear_archivo3, NULL);
+//		}
 
 		if (strcmp(comandos[0], "exit") == 0)
 			exit(1);
 	}
 }
 
+
+
 void iniciar() {
+	m_archivos_id = malloc(sizeof(sem_t));
+	sem_init(m_archivos_id, 0, 1);
+	m_control_directorios = malloc(sizeof(sem_t));
+	sem_init(m_control_directorios, 0, 1);
+	m_directorios_id = malloc(sizeof(sem_t));
+	sem_init(m_directorios_id, 0, 1);
+	m_nodos_id = malloc(sizeof(sem_t));
+	sem_init(m_nodos_id, 0, 1);
+
 	semaforos_archivo = malloc(sizeof(t_control_self));
 	semaforos_archivo->lectura = dictionary_create();
 	semaforos_archivo->escritura = dictionary_create();
@@ -305,88 +256,28 @@ void iniciar() {
 
 	directorios = malloc(sizeof(t_directorios_self));
 	directorios->directorios = list_create();
-	directorios->contador = 0;
-	directorios->contador_directorios = 0;
+	directorios->contador = mongo_get_long("id", "contadores", "contador_directorios", "global");
+	directorios->contador_directorios = mongo_get_integer("id", "control", "control_directorios", "global");
 
 	archivos = list_create();
 	nodos = list_create();
 	bloques_nodos_archivos = dictionary_create();
 	bloques_nodo_disponible = dictionary_create();
 
-	contador_archivos = 0;
-	contador_nodo = 0;
+	contador_archivos = mongo_get_long("id", "contadores", "contador_archivos", "global");
+	contador_nodo = mongo_get_long("id", "contadores", "contador_nodos", "global");
+
+	cargar_datos_prexistentes();
 }
 
 void inicio_mock(){
-//	alta_nodo("J");
-//	alta_nodo("H");
-//	alta_nodo("L");
-//
-//	copiar_archivo_a_mdfs("/home/utnso/Escritorio/Nuevo.txt", "/prueba");
-//	listar_bloques_archivo("/prueba/Nuevo.txt");
-//
-//	copiar_bloque("H", 1, "L", 2);
-//	listar_bloques_archivo("/prueba/Nuevo.txt");
-//
-//	copiar_archivo_a_mdfs("/home/utnso/Escritorio/Nuevo.txt", "/prueba/hola");
-//	listar_bloques_archivo("/prueba/hola/Nuevo.txt");
-//
-//	copiar_bloque("L", 1, "L", 3);
-//	listar_bloques_archivo("/prueba/Nuevo.txt");
-//	listar_bloques_archivo("/prueba/hola/Nuevo.txt");
-//
-//	borrar_bloque("J", 2);
-//	listar_bloques_archivo("/prueba/Nuevo.txt");
-//
-//	baja_nodo("H");
-
-	crear_directorio(
-			"/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola", "hola");
-	crear_directorio(
-			"/hola1/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola", "hola");
-	crear_directorio(
-			"/hola2/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola", "hola");
-	crear_directorio(
-			"/hola3/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola", "hola");
-	crear_directorio(
-			"/hola4/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola", "hola");
-	crear_directorio(
-			"/hola5/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola", "hola");
-	crear_directorio(
-			"/hola6/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola", "hola");
-	crear_directorio(
-			"/hola7/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola", "hola");
-	crear_directorio(
-			"/hola8/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola", "hola");
-	crear_directorio(
-			"/hola9/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola", "hola");
-	crear_directorio(
-			"/hola10/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola", "hola");
-	crear_directorio(
-			"/hola11/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola", "hola");
-	crear_directorio(
-			"/hola12/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola", "hola");
-	crear_directorio(
-			"/hola13/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola", "hola");
-	crear_directorio(
-			"/hola14/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola", "hola");
-	crear_directorio(
-			"/hola15/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola", "hola");
-	crear_directorio(
-			"/hola16/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola", "hola");
-	crear_directorio(
-			"/hola17/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola", "hola");
-	crear_directorio(
-			"/hola18/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola", "hola");
-	crear_directorio(
-			"/hola19/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola/hola", "hola");
 }
-
 
 
 int main(int argc, char *argv[]) {
 	txt_write_in_stdout("Bienvenido!\n");
 	iniciar();
-//	inicio_mock();
+////	inicio_mock();
 	consola();
+
 }
