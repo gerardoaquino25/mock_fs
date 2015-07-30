@@ -12,6 +12,10 @@ start nodo C
 copy file /home/utnso/Escritorio/Nuevo2.txt /prueba
 copy file /home/utnso/Escritorio/Nuevo.txt /prueba
 
+
+copy bloque PC231 1 PC232 32
+ls bloques /prueba/Nuevo2.txt
+
 ls bloques /prueba/Nuevo2.txt
 
 ls bloques /prueba/Nuevo.txt
@@ -112,5 +116,3 @@ FALTANTES:
 - Falta updatear Mongo en copiar_bloque.
 - Revisar copiar_bloque.
 - Get MD5.
-- Revisar formatear.
-- Falta updetear Mongo en formatear.

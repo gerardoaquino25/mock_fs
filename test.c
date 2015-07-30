@@ -154,6 +154,17 @@ void* consola() {
 					eliminar_directorio(comandos[2]);
 			}
 
+		if (strcmp(comandos[0], "format") == 0) {
+			txt_write_in_stdout("Esta seguro que quiere formatear la unidad? [s/n].\n");
+			char formatear_confirmacion_aux[256];
+			fgets(formatear_confirmacion_aux, sizeof(formatear_confirmacion_aux), stdin);
+			char* formatear_confirmacion = string_duplicate(formatear_confirmacion_aux);
+			string_trim(&formatear_confirmacion);
+
+			if(strcmp(formatear_confirmacion, "s") == 0)
+				formatear_mdfs();
+		}
+
 		if (strcmp(comandos[0], "ls") == 0) {
 			if (comandos[1] == NULL)
 				listar_todo();
@@ -278,6 +289,11 @@ int main(int argc, char *argv[]) {
 	txt_write_in_stdout("Bienvenido!\n");
 	iniciar();
 ////	inicio_mock();
+
+	alta_nodo("PC23");
+	alta_nodo("PC231");
+	alta_nodo("PC232");
+
 	consola();
 
 }

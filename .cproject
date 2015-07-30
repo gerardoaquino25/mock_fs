@@ -41,9 +41,9 @@
 									<listOptionValue builtIn="false" value="/usr/lib"/>
 								</option>
 								<option id="gnu.c.link.option.libs.530793549" name="Libraries (-l)" superClass="gnu.c.link.option.libs" valueType="libs">
-									<listOptionValue builtIn="false" value="commons"/>
-									<listOptionValue builtIn="false" value="mongoc-1.0"/>
+									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="commons"/>
 									<listOptionValue builtIn="false" value="bson-1.0"/>
+									<listOptionValue builtIn="false" value="mongoc-1.0"/>
 									<listOptionValue builtIn="false" value="pthread"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.c.linker.input.1169972791" superClass="cdt.managedbuild.tool.gnu.c.linker.input">
@@ -55,8 +55,8 @@
 							<tool id="cdt.managedbuild.tool.gnu.assembler.exe.debug.1813625777" name="GCC Assembler" superClass="cdt.managedbuild.tool.gnu.assembler.exe.debug">
 								<option id="gnu.both.asm.option.include.paths.1379459002" name="Include paths (-I)" superClass="gnu.both.asm.option.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/commons}&quot;"/>
-									<listOptionValue builtIn="false" value="/usr/include/libmongoc-1.0"/>
 									<listOptionValue builtIn="false" value="/usr/include/libbson-1.0"/>
+									<listOptionValue builtIn="false" value="/usr/include/libmongoc-1.0"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.44325272" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
 							</tool>
