@@ -225,7 +225,7 @@ t_archivo_self* create_archivo(long tamanio, char* nombre);
 /*
  * Crea un bloque nuevo.
  */
-t_bloque_archivo_self* create_bloque(int numero);
+t_bloque_archivo_self* create_bloque(int numero, int estado);
 
 /*
  * Crea una copia de un bloque determinado de un archivo y lo asigna a un bloque de un nodo.

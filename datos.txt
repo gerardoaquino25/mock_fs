@@ -1,6 +1,9 @@
+GIT
+
 git clone https://github.com/sisoputnfrba/tp-2015-1c-los-salieris.git
 
-
+--------------------------------------------------------
+ACCCESOS RAPIDOS
 
 start nodo A
 start nodo B
@@ -23,7 +26,7 @@ copy bloque A 1 K 2
 
 ls nodos
 
-
+--------------------------------------------------------
 COMANDOS
 	-DIRECTORIOS:
 		cd ..
@@ -51,13 +54,63 @@ COMANDOS
 
 	-OTROS:
 
-PROBAR:
-- Al copiar un bloque, validar que lo que se copia no sea una copia de un mismo bloque de archivo que ya se encuentra en el mismo nodo.
-- Enviar a nodo cada 20MB.
+--------------------------------------------------------
 
-FALTANTE:
-- Validar disponibilidad(Concurrencia) de archivo.
+MONGO
 
+-Para instalar mongo
+	MONGODB
+	$ sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 7F0CEB10
+	$ echo "deb http://repo.mongodb.org/apt/ubuntu "$(lsb_release -sc)"/mongodb-org/3.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-3.0.list
+	$ sudo apt-get install -y mongodb
+	
+	MONGO C DRIVER
+	$ wget https://github.com/mongodb/mongo-c-driver/releases/download/1.1.10/mongo-c-driver-1.1.10.tar.gz
+	$ tar -xzf mongo-c-driver-1.1.10.tar.gz
+	$ cd mongo-c-driver-1.1.10/
+	$ ./configure --prefix=/usr --libdir=/usr/lib
+	$ make
+	$ sudo make install
+
+-Para que tome la libreria de MONGO en ECLIPSE
+	-C/C++ General
+		+paths and symbols
+			*includes
+				/usr/include/libmongoc-1.0
+				/usr/include/libbson-1.0
+			*Library Paths
+				/usr/lib
+	
+	-C/C++ Build
+		+Setting
+			*GCC C Compiler
+				#Includes
+					/usr/include/libbson-1.0
+					/usr/include/libmongoc-1.0
+			*GCC C Linker
+				#Libraries
+					@Libraries
+						mongoc-1.0
+						bson-1.0
+					#Library search path
+						/usr/lib
+
+EJECUTAR POR PRIMERA VEZ EN MONGO DESDE CONSOLA
+Para entrar a mongo en consola se pone:
+$ mongo
+Para entrar a DB a utilizar
+$ use utnso
 
 db.global.insert({"id" : "contadores", "contador_directorios" : 0, "contador_archivos" : 0, "contador_nodos" : 0})
 db.global.insert({"id" : "control", "control_directorios" : 0})
+
+--------------------------------------------------------
+
+FALTANTES:
+- Cuando renombro un directorio, verificar que renombre el nombre de los archivos correspondientes.
+- Cuando muevo un directorio, verificar que renombre el nombre de los archivos correspondientes.
+- Falta updatear Mongo en copiar_bloque.
+- Revisar copiar_bloque.
+- Get MD5.
+- Revisar formatear.
+- Falta updetear Mongo en formatear.
