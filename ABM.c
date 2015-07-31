@@ -1,5 +1,46 @@
 #include "ABM.h"
 
+void iniciar() {
+	m_archivos_id = malloc(sizeof(sem_t));
+	sem_init(m_archivos_id, 0, 1);
+	m_control_directorios = malloc(sizeof(sem_t));
+	sem_init(m_control_directorios, 0, 1);
+	m_directorios_id = malloc(sizeof(sem_t));
+	sem_init(m_directorios_id, 0, 1);
+	m_nodos_id = malloc(sizeof(sem_t));
+	sem_init(m_nodos_id, 0, 1);
+
+	semaforos_archivo = malloc(sizeof(t_control_self));
+	semaforos_archivo->lectura = dictionary_create();
+	semaforos_archivo->escritura = dictionary_create();
+	semaforos_archivo->intermedio = dictionary_create();
+
+	semaforos_bloque = malloc(sizeof(t_control_self));
+	semaforos_bloque->lectura = dictionary_create();
+	semaforos_bloque->escritura = dictionary_create();
+	semaforos_bloque->intermedio = dictionary_create();
+
+	semaforos_nodo = malloc(sizeof(t_control_self));
+	semaforos_nodo->lectura = dictionary_create();
+	semaforos_nodo->escritura = dictionary_create();
+	semaforos_nodo->intermedio = dictionary_create();
+
+	directorios = malloc(sizeof(t_directorios_self));
+	directorios->directorios = list_create();
+	directorios->contador = mongo_get_long("id", "contadores", "contador_directorios", "global");
+	directorios->contador_directorios = mongo_get_integer("id", "control", "control_directorios", "global");
+
+	archivos = list_create();
+	nodos = list_create();
+	bloques_nodos_archivos = dictionary_create();
+	bloques_nodo_disponible = dictionary_create();
+
+	contador_archivos = mongo_get_long("id", "contadores", "contador_archivos", "global");
+	contador_nodo = mongo_get_long("id", "contadores", "contador_nodos", "global");
+
+	cargar_datos_prexistentes();
+}
+
 void bloquear_contador(sem_t* m_lectura){
 	txt_write_in_stdout("BLOQUEA\n");
 	sem_wait(m_lectura);
@@ -733,6 +774,7 @@ void asignar_bloque_nodo_a_copia(t_copia_self* copia, t_nodo_self* nodo, int nod
 	if (!nodo_ocupado) {
 		nodo->bloques_disponibles--;
 		mongo_update_integer("nodo_id", nodo->nodo_id, "bloques_disponibles", nodo->bloques_disponibles, "nodos");
+		mongo_delete_2("nodo_id", nodo->nodo_id, "numero", nodo_bloque->bloque_nodo, "bloques_nodo_disponible");
 	}
 }
 
@@ -867,20 +909,20 @@ void renombrar_archivo(char * ruta, char* nombre) {
 void eliminar_archivo(char * ruta) {
 	int indice, i, j, k;
 	t_archivo_self * archivo = NULL;
+
 	for (indice = 0; indice < list_size(archivos); indice += 1) {
 		t_archivo_self * archivo_aux = list_get(archivos, indice);
 		if (strcasecmp(archivo_aux->nombre, ruta) == 0) {
 			archivo = archivo_aux;
 			break;
 		}
-		mongo_delete("id", archivo->id, "archivos");
 	}
 
 	if (archivo != NULL) {
-		for (i = 0; i < dictionary_size(archivo->bloques); i++) {
+		for (i = archivo->cantidad_bloques - 1; i >= 0; i--) {
 			t_bloque_archivo_self* bloque = dictionary_get(archivo->bloques, string_itoa(i));
-			for (j = 0; j < dictionary_size(bloque->copias); j++) {
-				t_copia_self* copia = list_get(bloque->copias, i);
+			for (j = 0; j < bloque->copias->elements_count	; j++) {
+				t_copia_self* copia = list_get(bloque->copias, j);
 				t_nodo_bloque_self* bloque_nodo = copia->nodo_bloque;
 				t_nodo_self * nodo = bloque_nodo->nodo;
 				//TODO: Si el nodo no esta disponible, no se puede borrar los datos.
@@ -897,9 +939,11 @@ void eliminar_archivo(char * ruta) {
 				t_list* archivos_nodo = dictionary_get(bloques_nodos_archivos, nodo->nodo_id);
 
 				for (k = list_size(archivos_nodo) - 1; k >= 0; k--) {
-					t_bloque_archivo_control_self* bloque_archivo_control = list_get(archivos_nodo, i);
-					if (strcasecmp(bloque_archivo_control->archivo_id, archivo->id) == 0)
+					t_bloque_archivo_control_self* bloque_archivo_control = list_get(archivos_nodo, k);
+					if (strcasecmp(bloque_archivo_control->archivo_id, archivo->id) == 0) {
 						list_remove(archivos_nodo, k);
+						break;
+					}
 				}
 				mongo_delete("archivo_id", archivo->id, "bloques_nodo_copia");
 			}
@@ -907,6 +951,10 @@ void eliminar_archivo(char * ruta) {
 		}
 
 		list_remove(archivos, indice);
+		dictionary_destroy(archivo->bloques);
+		mongo_delete("archivo_id", archivo->id, "bloques_nodo_copia");
+		mongo_delete("id", archivo->id, "archivos");
+		free(archivo);
 	}
 }
 
@@ -1595,6 +1643,25 @@ void borrado_fisico_bloque() {
 
 }
 
+//void borrar_archivo(char* nombre) {
+//	int i, j;
+//	t_archivo_self * archivo = find_archivo(nombre, archivos);
+//	t_dictionary* bloques = archivo->bloques;
+//
+//	for (i = archivo->cantidad_bloques; i >= 0; i--) {
+//		t_list* copias = list_get(bloques, i);
+//
+//		for (j = archivo->cantidad_bloques; j >= 0; j--) {
+//			t_copia_self* copia = list_get(copias, j);
+//			copia->nodo_bloque->nodo->bloques_disponibles++;
+//			mongo_update_integer("nodo_id", copia->nodo_bloque->nodo->nodo_id, "bloques_disponibles",
+//					copia->nodo_bloque->nodo->bloques_disponibles, "nodos");
+//		}
+//		list_destroy(copias);
+//	}
+//	list_destroy(bloques);
+//}
+
 void borrar_bloque(char* nombre, int bloque_nodo_id) {
 
 	if (bloque_nodo_id <= CANTIDAD_BLOQUES_NODO_DEFAULT) {
@@ -1606,7 +1673,7 @@ void borrar_bloque(char* nombre, int bloque_nodo_id) {
 				t_copia_self * copia = dictionary_get(nodo->bloques, string_itoa(bloque_nodo_id));
 
 				if (copia != NULL) {
-					bloquear_bloque(nodo->nodo_id, bloque_nodo_id, true, false);
+//					bloquear_bloque(nodo->nodo_id, bloque_nodo_id, true, false);
 					borrado_fisico_bloque(); //TODO: borrado fisico de bloque del nodo.
 					t_archivo_self* archivo = find_archivo_by_id(copia->archivo_id, archivos);
 					t_bloque_archivo_self * bloque = dictionary_get(archivo->bloques, string_itoa(copia->archivo_bloque));
@@ -1623,7 +1690,7 @@ void borrar_bloque(char* nombre, int bloque_nodo_id) {
 					dictionary_remove(nodo->bloques, string_itoa(bloque_nodo_id));
 					mongo_delete_2("nodo_id", nodo->nodo_id, "nodo_bloque", copia->nodo_bloque->bloque_nodo, "bloques_nodo_copia");
 					nodo->bloques_disponibles++;
-					mongo_update_string("nodo_id", nodo->nodo_id, "bloques_disponibles", nodo->bloques_disponibles, "nodos");
+					mongo_update_integer("nodo_id", nodo->nodo_id, "bloques_disponibles", nodo->bloques_disponibles, "nodos");
 
 					for (i = 0; i < bloque->copias->elements_count; i++) {
 						t_copia_self * copia_aux = list_get(bloque->copias, i);
@@ -1632,6 +1699,8 @@ void borrar_bloque(char* nombre, int bloque_nodo_id) {
 							if (numero_copia <= bloque->copias->elements_count) {
 								t_copia_self * copia_aux2 = list_get(bloque->copias, bloque->copias->elements_count - 1);
 								copia_aux2->numero = numero_copia;
+								mongo_update_2("nodo_id", copia_aux2->nodo_bloque->nodo->nodo_id, "nodo_bloque",
+										copia_aux2->nodo_bloque->bloque_nodo, "numero_copia", string_itoa(numero_copia), "bloques_nodo_copia", 1);
 							}
 							break;
 						}
@@ -1648,7 +1717,7 @@ void borrar_bloque(char* nombre, int bloque_nodo_id) {
 						}
 					}
 					chequear_baja_archivo(archivo, archivo_bloque);
-					desbloquear_bloque(nodo->nodo_id, bloque_nodo_id, true, false);
+//					desbloquear_bloque(nodo->nodo_id, bloque_nodo_id, true, false);
 
 					txt_write_in_stdout("El bloque fue borrado exitosamente.\n");
 				} else {
@@ -1737,16 +1806,16 @@ void borrar_bloque(char* nombre, int bloque_nodo_id) {
 //	}
 //}
 
-//int existe_copia_en_nodo(t_bloque_archivo_self* bloque, t_nodo_self* nodo) {
-//	int i;
-//	for (i = 0; i < bloque->copias->elements_count; i++) {
-//		t_copia_self* copia = list_get(bloque->copias, i);
-//		if (strcasecmp(copia->nodo_bloque->nodo->nodo_id, nodo->nodo_id) == 0)
-//			return false;
-//	}
-//
-//	return true;
-//}
+int existe_copia_en_nodo(t_bloque_archivo_self* bloque, t_nodo_self* nodo) {
+	int i;
+	for (i = 0; i < bloque->copias->elements_count; i++) {
+		t_copia_self* copia = list_get(bloque->copias, i);
+		if (strcasecmp(copia->nodo_bloque->nodo->nodo_id, nodo->nodo_id) == 0)
+			return true;
+	}
+
+	return false;
+}
 
 void copiar_bloque(char* nombre_nodo_origen, int bloque_origen, char* nombre_nodo_destino, int bloque_destino) {
 //TODO: Copiar fisicamente al nodo indicado.
@@ -1764,13 +1833,13 @@ void copiar_bloque(char* nombre_nodo_origen, int bloque_origen, char* nombre_nod
 
 					if (nodo_destino != NULL) {
 
-						if (strcasecmp(nodo_destino->nodo_id, nodo_origen->nodo_id) != 0) {
+						if (nodo_destino->estado == VALIDO) {
+							int ocupado = false;
+							t_archivo_self* archivo_origen = find_archivo_by_id(copia_origen->archivo_id, archivos);
+							t_bloque_archivo_self* bloque_archivo = dictionary_get(archivo_origen->bloques,
+									string_itoa(copia_origen->archivo_bloque));
+							if (!existe_copia_en_nodo(bloque_archivo, nodo_destino)) {
 
-							if (nodo_destino->estado == VALIDO) {
-								int ocupado = false;
-								t_archivo_self* archivo_origen = find_archivo_by_id(copia_origen->archivo_id, archivos);
-								t_bloque_archivo_self* bloque_archivo = dictionary_get(archivo_origen->bloques,
-										string_itoa(copia_origen->archivo_bloque));
 								t_copia_self * copia_destino = dictionary_get(nodo_destino->bloques, string_itoa(bloque_destino));
 //								bloquear_bloque(nodo_destino->nodo_id, bloque_destino, 1, 0);
 
@@ -1797,6 +1866,8 @@ void copiar_bloque(char* nombre_nodo_origen, int bloque_origen, char* nombre_nod
 
 									t_list* archivos_nodo = dictionary_get(bloques_nodos_archivos, nodo_destino->nodo_id);
 
+									int numero_copia = copia_destino->numero;
+
 									for (i = 0; i < archivos_nodo->elements_count; i++) {
 										t_bloque_archivo_control_self* bloque_archivo_control = list_get(archivos_nodo, i);
 										if (strcasecmp(bloque_archivo_control->archivo_id, archivo_destino->id) == 0
@@ -1805,19 +1876,27 @@ void copiar_bloque(char* nombre_nodo_origen, int bloque_origen, char* nombre_nod
 											break;
 										}
 									}
+
+									if (numero_copia <= bloque_archivo_destino->copias->elements_count && bloque_archivo_destino->copias->elements_count > 0) {
+										t_copia_self * copia_aux2 = list_get(bloque_archivo_destino->copias, bloque_archivo_destino->copias->elements_count - 1);
+										copia_aux2->numero = numero_copia;
+									}
+
+									mongo_delete_2("nodo_id", nodo_destino->nodo_id, "nodo_bloque", bloque_destino, "bloques_nodo_copia");
 									chequear_baja_archivo(archivo_destino, archivo_bloque_destino);
 								}
 
 								t_copia_self * duplicado = create_copia(copia_origen->archivo_bloque, nodo_destino,
-										copia_origen->archivo_id, bloque_destino, ocupado, bloque_archivo->copias->elements_count + 1);
+										copia_origen->archivo_id, bloque_destino, ocupado,
+										bloque_archivo->copias->elements_count + 1);
 								asignar_copia_a_bloque_archivo(bloque_archivo, duplicado);
 
 								txt_write_in_stdout("El bloque fue copiado exitosamente.\n");
 							} else {
-								txt_write_in_stdout("El nodo destino esta inactivo.\n");
+								txt_write_in_stdout("Ya existe una copia en nodo destino.\n");
 							}
 						} else {
-							txt_write_in_stdout("El nodo destino y origen son el mismo.\n");
+							txt_write_in_stdout("El nodo destino esta inactivo.\n");
 						}
 					} else {
 						txt_write_in_stdout("No se encontro el nodo destino indicado.\n");
@@ -1899,6 +1978,47 @@ void mongo_update(char* key_to_search, char* value_to_search, char* key_to_updat
 	collection = mongoc_client_get_collection(mongo_client, MONGO_DB, collection_name);
 
 	query = BCON_NEW(key_to_search, BCON_UTF8 (value_to_search));
+
+	if (type == 0) {
+		update = BCON_NEW("$set", "{", key_to_update, BCON_UTF8 (value_to_update), "}");
+	} else if (type == 1) {
+		update = BCON_NEW("$set", "{", key_to_update, BCON_INT32((int) strtol(value_to_update, (char **)NULL, 10)), "}");
+	} else if (type == 2) {
+		update = BCON_NEW("$set", "{", key_to_update, BCON_INT64((long) strtol(value_to_update, (char **)NULL, 10)), "}");
+	}
+
+	if (!mongoc_collection_update(collection, MONGOC_UPDATE_NONE, query, update, NULL, &error)) {
+		printf("%s\n", error.message);
+		goto fail;
+	}
+
+	fail: if (doc)
+		bson_destroy(doc);
+	if (query)
+		bson_destroy(query);
+	if (update)
+		bson_destroy(update);
+
+	mongoc_collection_destroy(collection);
+	mongoc_client_destroy(mongo_client);
+}
+
+void mongo_update_2(char* key_to_search, char* value_to_search, char* key_to_search2, int value_to_search2,
+		char* key_to_update, char* value_to_update, char* collection_name, int type) {
+	mongoc_collection_t *collection;
+	bson_error_t error;
+	bson_t *doc = NULL;
+	bson_t *update = NULL;
+	bson_t *query = NULL;
+
+	mongoc_client_t* mongo_client;
+	mongoc_init();
+
+	mongo_client = mongoc_client_new(MONGO_SERVER);
+	collection = mongoc_client_get_collection(mongo_client, MONGO_DB, collection_name);
+
+	query = BCON_NEW(key_to_search, BCON_UTF8 (value_to_search));
+	BCON_APPEND(query, key_to_search2, BCON_INT32 (value_to_search2));
 
 	if (type == 0) {
 		update = BCON_NEW("$set", "{", key_to_update, BCON_UTF8 (value_to_update), "}");

@@ -16,7 +16,10 @@ copy file /home/utnso/Escritorio/Nuevo.txt /prueba
 copy bloque PC231 1 PC232 32
 ls bloques /prueba/Nuevo2.txt
 
+delete file /prueba/Nuevo.txt
+
 ls bloques /prueba/Nuevo2.txt
+copy bloque PC23 13 PC178 13
 
 ls bloques /prueba/Nuevo.txt
 
@@ -113,6 +116,4 @@ db.global.insert({"id" : "control", "control_directorios" : 0})
 FALTANTES:
 - Cuando renombro un directorio, verificar que renombre el nombre de los archivos correspondientes.
 - Cuando muevo un directorio, verificar que renombre el nombre de los archivos correspondientes.
-- Falta updatear Mongo en copiar_bloque.
-- Revisar copiar_bloque.
 - Get MD5.
