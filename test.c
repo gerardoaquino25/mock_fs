@@ -130,6 +130,9 @@ void* consola() {
 			} else if (strcmp(comandos[1], "file") == 0) {
 				if (comandos[2] != NULL)
 					eliminar_archivo(comandos[2]);
+			} else if (strcmp(comandos[1], "nodo") == 0) {
+				if (comandos[2] != NULL)
+					eliminar_nodo(comandos[2]);
 			}
 		}
 
@@ -142,6 +145,12 @@ void* consola() {
 
 			if (strcmp(formatear_confirmacion, "s") == 0)
 				formatear_mdfs();
+		}
+
+		if (strcmp(comandos[0], "df") == 0) {
+			if (strcmp(comandos[1], "-h") == 0) {
+				mostrar_espacio_fs();
+			}
 		}
 
 		if (strcmp(comandos[0], "ls") == 0) {

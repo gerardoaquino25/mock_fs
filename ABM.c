@@ -41,6 +41,31 @@ void iniciar() {
 	cargar_datos_prexistentes();
 }
 
+void mostrar_espacio_fs() {
+	int i;
+	int espacio_disponible_total = 0;
+	int espacio_disponible = 0;
+	int espacio_total = 0;
+
+	for (i = 0; i < nodos->elements_count; i++) {
+		t_nodo_self * nodo = list_get(nodos, i);
+		espacio_total += CANTIDAD_BLOQUES_NODO_DEFAULT * 20;
+		espacio_disponible_total += nodo->bloques_disponibles * 20;
+		if (nodo->estado == VALIDO)
+			espacio_disponible += nodo->bloques_disponibles * 20;
+	}
+
+	txt_write_in_stdout("ESPACIO TOTAL: ");
+	txt_write_in_stdout(string_itoa(espacio_total));
+	txt_write_in_stdout(" MB.\n");
+	txt_write_in_stdout("ESPACIO DISPONIBLE TOTAL: ");
+	txt_write_in_stdout(string_itoa(espacio_disponible_total));
+	txt_write_in_stdout(" MB.\n");
+	txt_write_in_stdout("ESPACIO DISPONIBLE REAL: ");
+	txt_write_in_stdout(string_itoa(espacio_disponible));
+	txt_write_in_stdout(" MB.\n");
+}
+
 void bloquear_contador(sem_t* m_lectura){
 	txt_write_in_stdout("BLOQUEA\n");
 	sem_wait(m_lectura);
@@ -539,8 +564,62 @@ void chequear_baja_archivo(t_archivo_self* archivo, int archivo_bloque) {
 	}
 }
 
-void remove_nodo(char* nombre){
+void eliminar_nodo(char* nombre) {
+	int indice;
+	t_nodo_self* nodo = NULL;
+	for (indice = 0; indice < nodos->elements_count; indice++) {
+		t_nodo_self * nodo_aux = list_get(nodos, indice);
+		if (strcasecmp(nodo_aux->nombre, nombre) == 0) {
+			nodo = nodo_aux;
+			break;
+		}
+	}
 
+	if (nodo != NULL) {
+		int i, j;
+		for (i = 1; i <= CANTIDAD_BLOQUES_NODO_DEFAULT; i++) {
+			t_copia_self * copia = dictionary_get(nodo->bloques, string_itoa(i));
+
+			if (copia != NULL) {
+				int numero_bloque = copia->archivo_bloque;
+				int numero_copia = copia->numero;
+				t_archivo_self * archivo = find_archivo_by_id(copia->archivo_id, archivos);
+				t_bloque_archivo_self* bloque = dictionary_get(archivo->bloques, string_itoa(copia->archivo_bloque));
+				t_list * lista_copias = bloque->copias;
+
+				for (j = 0; j < lista_copias->elements_count; j++) {
+					t_copia_self* copia_aux = list_get(lista_copias, j);
+					if (copia->numero == copia_aux->numero)
+						break;
+				}
+				list_remove(lista_copias, j);
+				if (numero_copia <= lista_copias->elements_count) {
+					t_copia_self * copia_aux2 = list_get(bloque->copias, bloque->copias->elements_count - 1);
+					copia_aux2->numero = numero_copia;
+					mongo_update_2("nodo_id", copia_aux2->nodo_bloque->nodo->nodo_id, "nodo_bloque",
+							copia_aux2->nodo_bloque->bloque_nodo, "numero_copia", string_itoa(numero_copia), "bloques_nodo_copia", 1);
+				}
+
+				chequear_baja_archivo(archivo, numero_bloque);
+			}
+		}
+
+		mongo_delete("nodo_id", nodo->nodo_id, "bloques_nodo_disponible");
+		list_clean(dictionary_get(bloques_nodo_disponible, nodo->nodo_id));
+		dictionary_remove(bloques_nodo_disponible, nodo->nodo_id);
+
+		list_clean(dictionary_get(bloques_nodos_archivos, nodo->nodo_id));
+		dictionary_remove(bloques_nodos_archivos, nodo->nodo_id);
+		mongo_delete("nodo_id", nodo->nodo_id, "bloques_nodo_copia");
+
+		dictionary_destroy(nodo->bloques);
+		mongo_delete("nodo_id", nodo->nodo_id, "nodos");
+
+		list_remove(nodos, indice);
+		txt_write_in_stdout("El nodo fue eliminado exitosamente.\n");
+	} else {
+		txt_write_in_stdout("No existe el nodo indicado.\n");
+	}
 }
 
 void baja_nodo(char* nombre) {
@@ -552,7 +631,7 @@ void baja_nodo(char* nombre) {
 			nodo->estado = 0;
 			t_list* archivos_nodo = dictionary_get(bloques_nodos_archivos, nodo->nodo_id);
 
-			bloquear_nodo(nodo->nodo_id, 0, 1);
+//			bloquear_nodo(nodo->nodo_id, 0, 1);
 			if (archivos_nodo != NULL) {
 				for (i = 0; i < list_size(archivos_nodo); i++) {
 					t_bloque_archivo_control_self* bloque_archivo_control = list_get(archivos_nodo, i);
@@ -560,7 +639,7 @@ void baja_nodo(char* nombre) {
 					chequear_baja_archivo(archivo, bloque_archivo_control->archivo_bloque);
 				}
 			}
-			desbloquear_nodo(nodo->nodo_id, 0, 1);
+//			desbloquear_nodo(nodo->nodo_id, 0, 1);
 
 			txt_write_in_stdout("El nodo ");
 			txt_write_in_stdout(nombre);
@@ -2063,7 +2142,7 @@ void mongo_delete(char* key, char* value, char* collection_name) {
 	mongoc_collection_t *collection;
 	bson_error_t error;
 	bson_t *doc;
-	mongoc_delete_flags_t  tipo_delete;
+	mongoc_delete_flags_t tipo_delete;
 
 	mongoc_client_t* mongo_client;
 	mongoc_init();
@@ -2074,13 +2153,9 @@ void mongo_delete(char* key, char* value, char* collection_name) {
 	doc = bson_new();
 	if (strcasecmp(key, "") != 0) {
 		BSON_APPEND_UTF8(doc, key, value);
-		tipo_delete = MONGOC_DELETE_SINGLE_REMOVE;
-	} else
-		tipo_delete = MONGOC_DELETE_NONE;
+	}
 
-
-
-	if (!mongoc_collection_delete(collection, tipo_delete, doc, NULL, &error)) {
+	if (!mongoc_collection_delete(collection, MONGOC_DELETE_NONE, doc, NULL, &error)) {
 		printf("Delete failed: %s\n", error.message);
 	}
 
@@ -2104,7 +2179,7 @@ void mongo_delete_2(char* key, char* value, char* key2, int value2, char* collec
 	BSON_APPEND_UTF8(doc, key, value);
 	BSON_APPEND_INT32(doc, key2, value2);
 
-	if (!mongoc_collection_delete(collection, MONGOC_DELETE_SINGLE_REMOVE, doc, NULL, &error)) {
+	if (!mongoc_collection_delete(collection, MONGOC_DELETE_NONE, doc, NULL, &error)) {
 		printf("Delete failed: %s\n", error.message);
 	}
 
